@@ -102,11 +102,22 @@ Runs in parallel with Stage 2.
 
 Every candidate runs through the internal benchmarking project before any product team spends time on it. The project holds the platform's versioned benchmark harness, the archetype eval suites and the standard safety battery from the Foundation section, so every model is scored the same way and results stay comparable over time.
 
+The harness is built on four open-source tools, each covering a different part of the benchmark:
+
+| Tool | What it measures | Used for |
+| --- | --- | --- |
+| [GuideLLM](https://github.com/vllm-project/guidellm) | Load tests the served endpoint across request rates, from a single user up to saturation: time to first token, inter-token latency, request latency and throughput | Operational baseline |
+| [LightEval](https://github.com/huggingface/lighteval) | Runs public benchmarks (knowledge, reasoning, math, code, multilingual) and custom tasks with the same prompts and scoring for every model | Public-benchmark part of each archetype suite |
+| [DeepEval](https://github.com/confident-ai/deepeval) | Scores outputs on our own test cases with task metrics and LLM-as-judge metrics: RAG faithfulness and relevance, hallucination, summarization, JSON and tool-call correctness, bias and toxicity | Domain slices of each archetype suite; bias and toxicity in the safety battery |
+| [MTEB](https://github.com/embeddings-benchmark/mteb) | Embedding quality across retrieval, reranking, classification, clustering and semantic similarity, in many languages | Embeddings and search archetype |
+
 - **Isolated and product-free:** runs on the registry copy in a non-production environment. No product team is involved yet.
-- **Capability:** each target archetype's eval suite, including its domain slices, scored against the archetype requirements and the incumbent.
+- **Capability:** each target archetype's eval suite, including its domain slices, scored against the archetype requirements and the incumbent. LightEval covers the public benchmarks and DeepEval the domain slices; embedding models run MTEB in place of both, on the task types and languages the archetype needs.
 - **Safety and data risk:** the standard safety battery, red-teaming, and memorization and PII tests, reviewed by data governance.
-- **Operational baseline:** latency, throughput, memory and cost per request on target hardware, including any quantized variants.
-- **Published results:** scores are recorded in the benchmarking project and the registry entry, so product teams and the board can compare models.
+- **Operational baseline:** a GuideLLM sweep for latency, throughput and memory on target hardware, including any quantized variants, with prompt and output lengths matched to each archetype. Cost per request is derived from throughput at the latency target.
+- **Pinned configuration:** tool versions, task lists, metrics, thresholds and the judge model are pinned in the benchmarking project. Changing any of them creates a new suite version, and scores are compared only within the same version.
+- **Set up for our network:** as with garak, mirror each tool and everything it downloads (benchmark datasets, MTEB tasks, tokenizers) internally and pre-install it. DeepEval's judge metrics need a judge model: point them at a fixed, internally hosted model, never the candidate itself, and check judge scores against human labels on a sample before relying on them. Turn off DeepEval telemetry (`DEEPEVAL_TELEMETRY_OPT_OUT=YES`) and do not connect it to the vendor's cloud.
+- **Published results:** scores are recorded in the benchmarking project and the registry entry, with each tool's raw output attached, so product teams and the board can compare models.
 - **G5, worth piloting:** the ML evaluation team signs off that the model meets the safety bar and the requirements of at least one target archetype, and matches or beats the incumbent there. Models that fail are rejected without using a pilot team's time.
 
 ### Stage 6: Pilot evaluation (Gate G6)
@@ -306,7 +317,7 @@ Each gate leaves a record in the registry entry, so any model's admission can be
 | License memo (class + obligations) | Stage 2 | Legal |
 | Security report + AI bill of materials | Stage 3 | Security |
 | Garak report and hit log | Stage 4 | Security |
-| Benchmark report (archetype suites, safety, data risk, operational baseline) | Stage 5 | ML evaluation team |
+| Benchmark report (archetype suites, safety, data risk, operational baseline) with GuideLLM, LightEval, DeepEval and MTEB outputs | Stage 5 | ML evaluation team |
 | Eval report (archetypes, safety, data risk, performance) | Stage 6 | Pilot product, ML evaluation team |
 | Board decision record | Stage 7 | Model review board |
 | Model card | Stage 8 | Platform model owner |
