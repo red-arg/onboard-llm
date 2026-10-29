@@ -18,7 +18,7 @@ In scope: open-weight LLMs and embedding models hosted on platform infrastructur
 
 &#91;embedded content: model onboarding flow · 12 stages, 8 gates\]
 
-Legal and security reviews run side by side; everything else is sequential. Steps 0 to 10 are owned by the platform, step 11 by each product team, and scheduled re-evaluation feeds the next cycle.
+Legal and security reviews run side by side; everything else is sequential. Stages 0 to 9 are owned by the platform, Stage 10 by each product team, Stage 11 by both together, and scheduled re-evaluation feeds the next cycle.
 
 ## Roles and responsibilities
 
@@ -33,7 +33,7 @@ The platform model owner drives each onboarding end to end. The model review boa
 | Data governance / privacy | Sets the maximum data classification the model may process; reviews memorization and PII test results. |
 | Platform SRE / infrastructure | Capacity, serving configuration, observability, runbook, on-call. |
 | Model review board | Approves or rejects admission, replacement and retirement. Members: platform lead (chair), security, legal, data governance, risk. |
-| Product teams | Propose archetype gaps; as pilot product, run the Stage 6 capability evaluation and co-sign G6; test in sandbox; get use cases approved before production. On the review board: Consulted, not approvers. |
+| Product teams | Propose archetype gaps; as pilot product, run the Stage 6 capability evaluation and co-sign G6; adopt models in dev and get use cases approved before go-live; sign off their own go-live. On the review board: Consulted, not approvers. |
 
 ## Foundation: set up once, reused by every onboarding
 
@@ -95,7 +95,7 @@ Runs in parallel with Stage 2.
 - **Set up for our network:** our servers cannot reach the internet, and some garak probes and detectors download datasets or models on first use. Mirror garak and everything it downloads internally and pre-install it. Point any probe that needs an attacker model at an internally hosted model.
 - **Pass criteria:** Security sets a maximum failure rate per probe family and compares results with the incumbent. A higher failure rate than the incumbent on prompt-injection or jailbreak probes needs Security's review.
 - **Records:** garak's report and hit log are attached to the registry entry.
-- **Scope:** garak tests the bare model against known attacks. It does not replace the trifecta check at Stage 11 or product-level testing.
+- **Scope:** garak tests the bare model against known attacks. It does not replace the trifecta check at Stage 10 or product-level testing.
 - **G4, scan passed:** Security signs off the garak results. Models that fail are rejected before any benchmarking.
 
 ### Stage 5: Internal benchmarking (Gate G5)
@@ -125,7 +125,7 @@ The harness is built on four open-source tools, each covering a different part o
 A pilot product evaluates the model on its real use case, so selection rests on actual work rather than benchmarks alone. Garak, benchmark, safety and data-risk results come from Stages 4 and 5.
 
 - **Choose the pilot:** the platform model owner picks one product per target archetype, usually the team that reported the gap. The pilot commits a named owner, representative data within a classification limit agreed with data governance, and success criteria set before testing starts.
-- **Run outside production:** the pilot integrates the registry copy in staging through a pilot-only gateway alias. No production traffic or end users until G8.
+- **Run outside production:** the pilot integrates the registry copy in staging through a pilot-only gateway alias. No production traffic or end users until Go Live.
 - **Capability, run by the pilot:** task success against the agreed criteria, compared with the incumbent on the same tasks.
 - **Operational, run by the platform:** latency, throughput, memory and cost per request on target hardware, using the pilot's traffic pattern.
 - **G6, meets the bar:** the pilot product owner confirms fit for its use case, and the platform confirms performance under the pilot's traffic. Both sign the eval report.
@@ -151,27 +151,37 @@ The owner drafts the model card: approved archetypes, maximum data classificatio
 
 ### Stage 9: Production readiness (Gate G8)
 
+Runs in the dev environment, which mirrors production: same hardware class, serving stack, gateway configuration and network isolation. Everything is set up and proven in dev, then promoted unchanged at Go Live.
+
 - Serving configuration, capacity plan and autoscaling.
 - Gateway integration: alias mapping, guardrails, rate limits, metering, kill switch.
 - Dashboards and alerts for latency, errors, safety-filter hits and usage.
 - Runbook, rollback plan and on-call ownership.
 - Load test at expected peak.
-- **G8, ready to serve:** SRE and the platform model owner sign off.
+- **G8, ready for production:** SRE and the platform model owner sign off the dev deployment. Status becomes **Dev** in the registry, and the model is open to product adoption in dev.
 
-### Stage 10: Release
+### Stage 10: Product adoption
 
-1. **Sandbox:** opt-in access for product teams, non-sensitive data only. Collect feedback and real-world issues.
-2. **General availability:** published in the catalog and routing guide with its model card.
-3. **If replacing an incumbent:** shadow traffic, then a canary on the alias, then full cutover. Announce the incumbent's deprecation date to affected products.
+This is the second approval layer, owned by each product team. It runs in the dev environment; the product reaches production only at Go Live.
 
-### Stage 11: Product adoption
-
-This is the second approval layer, owned by each product team.
-
-- A product requests production access to an archetype alias, describing its use case and the data it will send.
+- A product requests access to an archetype alias, describing its use case and the data it will send.
 - The platform checks the use case against the model card (archetype, data classification, license obligations).
 - Higher-risk use cases, such as customer-facing, regulated data or automated decisions, go to risk and legal review.
-- The product passes the trifecta check (see Lethal trifecta and network isolation). Production credentials are issued only after approval. Each product runs its own application-level evaluation.
+- The product integrates through the dev gateway alias, using data within the classification agreed with data governance.
+- The product passes the trifecta check (see Lethal trifecta and network isolation) and runs its own application-level evaluation in dev.
+- **Use-case approval:** the platform records the approved use case. Production credentials are issued at Go Live, not before.
+
+### Stage 11: Go Live
+
+The model and the product move from dev to production together.
+
+- **Promote unchanged:** the platform deploys to production exactly what was signed off at G8: the same model version and hash, serving configuration, gateway alias, guardrails, dashboards and alerts. Any change goes back through dev first.
+- **Production checks:** smoke test through the production gateway, confirm alerts reach on-call, and test the kill switch and rollback.
+- **First go-live for a model:** status becomes **GA**, and the model is published in the catalog and routing guide with its model card.
+- **If replacing an incumbent:** shadow traffic, then a canary on the alias, then full cutover. Announce the incumbent's deprecation date to affected products.
+- **Product go-live:** production credentials are issued for the use case approved at Stage 10. The product owner confirms its application-level evaluation passed in dev.
+- **Early-life watch:** the platform and the product monitor quality, latency, safety-filter hits and incidents closely for the first weeks, with rollback ready.
+- **Sign-off:** SRE, the platform model owner and the product owner approve the go-live.
 
 ## Lethal trifecta and network isolation
 
@@ -196,7 +206,7 @@ The [lethal trifecta](https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/
 
 ### Where the leg can come back
 
-Isolating the model servers covers the hosting layer only. A product built on top can reintroduce external communication, so the check continues at Stage 11:
+Isolating the model servers covers the hosting layer only. A product built on top can reintroduce external communication, so the check continues at Stage 10:
 
 - **Outbound tools.** Sending email (internal mail servers relay outside), posting to chat, webhooks, or creating tickets, files or pull requests that outside parties can see.
 - **Rendering in the user's browser.** If a product renders model output as markdown or HTML, an injected image or link can carry data in its URL to an outside server when the browser loads it. The browser sits outside the server subnet's restrictions.
@@ -209,9 +219,9 @@ Isolating the model servers covers the hosting layer only. A product built on to
 
 - Model servers and the gateway stay without internet egress. Any exception needs Security approval and a Stage 9 readiness review.
 - The gateway output filter removes or flags external URLs and markdown images in model output by default.
-- The platform grants models no tools. Tools live in products, where Stage 11 can review them.
+- The platform grants models no tools. Tools live in products, where Stage 10 can review them.
 
-**Product, at Stage 11 (trifecta check):**
+**Product, at Stage 10 (trifecta check):**
 
 - The product declares its private data sources, untrusted content sources and outbound actions.
 - If all three legs are present, the product removes one before approval: drop the outbound action, require a person to confirm every outbound action, or keep untrusted content out of any context that holds private data.
@@ -224,7 +234,7 @@ When a business owner reports that hosted models don't meet their acceptance cri
 
 It runs when:
 
-- A new project's domain test fails during Stage 11.
+- A new project's domain test fails during Stage 10.
 - A live product reports quality falling short of its criteria.
 - A business owner asks for a new model or an exception to the catalog.
 
@@ -264,7 +274,7 @@ Scores show whether there's a gap; failure types show why. Classify every failed
 | Result | Diagnosis | Action |
 | --- | --- | --- |
 | Hosted model passes with the optimized prompt | Prompt problem | Product adopts the optimized prompt. The platform keeps it as a reference prompt for the archetype. |
-| Hosted model passes only at a higher tier | Wrong tier | Product moves to that tier through Stage 11. |
+| Hosted model passes only at a higher tier | Wrong tier | Product moves to that tier through Stage 10. |
 | Only the reference model passes | Catalog gap | Platform model owner logs a Stage 0 trigger. Options, cheapest first: domain adapter, new candidate model, new domain archetype if two or more products share the need. |
 | Nothing passes, even the reference model with the optimized prompt | Beyond current models | Redesign the workflow (Step 5). |
 
@@ -286,19 +296,19 @@ The bar stays anchored to business need; it is not lowered to fit the models. In
 
 ## Registry status and lifecycle
 
-Every model version carries exactly one status in the registry, and only Sandbox and GA models are reachable through the gateway.
+Every model version carries exactly one status in the registry, and only Dev and GA models are reachable through the gateway: Dev models through the dev gateway only, GA models in production.
 
 | Status | Meaning | Who can use it |
 | --- | --- | --- |
 | Proposed | Registered at intake, under review | Nobody |
 | Rejected | Failed a gate; reason recorded | Nobody |
 | Approved | Passed the review board, not yet serving | Nobody |
-| Sandbox | Serving, limited support | Opted-in teams, non-sensitive data only |
+| Dev | Serving in the dev environment after G8 | Product teams adopting it in dev, within the agreed data classification |
 | GA | Serving with SLA and support | Products with an approved use case |
 | Deprecated | Still serving, sunset date announced | Existing products only, while they migrate |
 | Retired | Removed from serving; artifacts archived | Nobody |
 
-**Ongoing obligations while a model is in Sandbox or GA:**
+**Ongoing obligations while a model is in Dev or GA:**
 
 - Monitor quality, latency, safety-filter hits and incidents.
 - Re-run archetype eval suites on a fixed schedule, for example quarterly, alongside new candidates.
@@ -322,8 +332,8 @@ Each gate leaves a record in the registry entry, so any model's admission can be
 | Board decision record | Stage 7 | Model review board |
 | Model card | Stage 8 | Platform model owner |
 | Runbook + readiness checklist | Stage 9 | Platform SRE |
-| Routing guide update + release notes | Stage 10 | Platform model owner |
-| Use-case approval | Stage 11 | Product team, platform |
+| Use-case approval | Stage 10 | Product team, platform |
+| Go-live sign-off, routing guide update + release notes | Stage 11 | Platform SRE, platform model owner, product team |
 | Gap diagnosis report (criteria, 2×2 scores, failure breakdown, decision) | Gap diagnosis | ML evaluation team, business owner |
 | Deprecation notice | Lifecycle | Platform model owner |
 
@@ -333,8 +343,8 @@ Set target durations per stage so the process doesn't become a bottleneck that p
 
 | Path | Applies to | Stages run | Suggested target |
 | --- | --- | --- | --- |
-| Full onboarding | New model family or new publisher | All stages, 0 to 10 | 4 to 6 weeks, intake to GA |
-| Fast track | Minor or patch version of an approved model, same license and architecture | Security (Stage 3), garak scan (Stage 4), eval regression on approved archetypes (Stage 5), readiness (Stage 9); owner and security sign-off replace the board | 1 to 2 weeks |
+| Full onboarding | New model family or new publisher | All stages, 0 to 11 | 4 to 6 weeks, intake to first go-live |
+| Fast track | Minor or patch version of an approved model, same license and architecture | Security (Stage 3), garak scan (Stage 4), eval regression on approved archetypes (Stage 5), readiness (Stage 9), go live (Stage 11); owner and security sign-off replace the board | 1 to 2 weeks |
 | Emergency replacement | Critical vulnerability in a GA model | Kill switch or rollback first; replacement follows fast track if available, else full onboarding | Mitigation same day |
 
 The board should meet on a fixed cadence, for example every two weeks, so approvals don't wait on scheduling.
