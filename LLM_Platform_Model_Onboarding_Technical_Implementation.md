@@ -103,7 +103,7 @@ sha256sum files.sha256        # the model digest
 
 | Repository | Contents | Who changes it |
 | --- | --- | --- |
-| `onboarding-config` | Pipeline definitions, suite definitions, policies (pass criteria), image lock (`images.lock.yaml`), data inventory and lock (`data/inventory.yaml`, `data/<suite>/<version>.lock.yaml`), normalizer and policy-check code | Reviewed pull requests; ML evaluation team and Security own their suites and policies. Lock files are written by P0 and merged by review |
+| `onboarding-config` | Pipeline definitions, archetype definitions (`archetypes/<id>.yaml`, see the [archetype framework](LLM_Platform_Archetype_Framework.md)), suite definitions, policies (pass criteria), image lock (`images.lock.yaml`), data inventory and lock (`data/inventory.yaml`, `data/<suite>/<version>.lock.yaml`), normalizer and policy-check code | Reviewed pull requests; archetype owners own archetype definitions, and the ML evaluation team and Security own their suites and policies. Lock files are written by P0 and merged by review |
 | `model-registry` | One YAML record per model version: status, owner, gate records and evidence links | Pipeline service account only, on a protected branch; every commit references the pipeline run that made it |
 | `gateway-aliases` | Alias-to-model-digest mapping and serving configuration per environment | Reviewed pull requests, merged only by the deploy pipeline after its checks pass |
 

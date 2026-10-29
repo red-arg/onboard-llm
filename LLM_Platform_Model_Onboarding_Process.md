@@ -39,7 +39,7 @@ The platform model owner drives each onboarding end to end. The model review boa
 
 These must exist before the first model is onboarded. Without them, every evaluation is ad hoc and models cannot be compared.
 
-1. **Archetype catalog.** A short, stable list of the use-case archetypes the platform serves, built from product teams' roadmaps. Starting point: Q&A / RAG, summarization, extraction and classification, code assistance, agents and tool use, embeddings and search, multilingual.
+1. **Archetype catalog.** A short, stable list of the use-case archetypes the platform serves, built from product teams' roadmaps. Starting point: Q&A / RAG, summarization, extraction and classification, code assistance, agents and tool use, embeddings and search, multilingual. Archetypes are created, changed and retired through the [archetype framework](LLM_Platform_Archetype_Framework.md).
 2. **Requirements per archetype.** Minimum quality bar, latency target, context length, languages, maximum data classification, and target cost per request.
 3. **Eval suite per archetype.** Representative tasks on content like the platform's real workload: public benchmarks plus domain samples contributed by product teams (or synthetic data until those exist). Versioned, so scores stay comparable across models.
 4. **Standard safety battery.** Jailbreak and prompt-injection resistance, harmful-content refusal, bias probes, memorization and PII leakage tests. Run on every model regardless of archetype.
