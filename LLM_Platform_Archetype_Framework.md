@@ -97,11 +97,11 @@ Product
 
 | Component | What it is | Where it lives | Rules | Controls and logs |
 | --- | --- | --- | --- | --- |
-| Profile and seed samples | One per product use case | `onboarding-config/profiles/<product>-<use-case>.yaml`; `eval-data/domain/<id>-<slice>/seed/` | 1.1 to 1.6 | C1 to C3; Git history, Nexus audit log |
-| Archetype definition | Scope, members, requirements, tier, conditions, residual risk | `onboarding-config/archetypes/<id>.yaml` | 3.1 to 3.7, Operations | C8 to C12; Git history of reviewed changes |
-| Eval suite and G5 policy | Slices, reference prompt, safety additions, pass criteria | `onboarding-config` suites and policies; `eval-data/domain/<id>-<slice>/` | 4.1 to 4.7 | C13 to C16; run manifests and results in `evidence` |
+| Profile and seed samples | One per product use case | `onboarding-config/profiles/<product>-<use-case>.yaml`; `eval-data/domain/<id>-<slice>/seed/` | 1.1 to 1.6 | C1 to C3, C19; Git history, Nexus audit log |
+| Archetype definition | Scope, members, requirements, tier, conditions, residual risk | `onboarding-config/archetypes/<id>.yaml` | 3.1 to 3.7, Operations | C8 to C12, C17; Git history of reviewed changes |
+| Eval suite and G5 policy | Slices, reference prompt, safety additions, pass criteria | `onboarding-config` suites and policies; `eval-data/domain/<id>-<slice>/` | 4.1 to 4.7 | C13 to C16, C18; run manifests and results in `evidence` |
 | Gateway alias | The name products call, mapped to a model digest | `gateway-aliases` | 3.2, 3.7, Access | C20 to C23; alias history, P6 and gateway logs |
-| Decision records | A1 to A4 records, test results, residual-risk acceptance | `evidence/archetypes/<id>/` through P5; until P5 accepts them, attached to the definition's pull request | 2.4, 2.5, 3.5, 3.6 | C7, C9; signed, write-once evidence |
+| Decision records | A1 to A4 records, test results, residual-risk acceptance | `evidence/archetypes/<id>/` through P5; until P5 accepts them, attached to the definition's pull request | 2.1 to 2.5, 3.5, 3.6 | C4 to C7, C9; signed, write-once evidence once in P5, Git history until then |
 | Routing guide entry | What each archetype does and does not do, for product teams | Routing guide (Stage 11) | Audience information | C17 keeps it current |
 
 ### Interfaces
@@ -122,7 +122,7 @@ Each interface is a control point with a contract:
 | Actor | Identity | Owner | Inventory | Logs | Retired when |
 | --- | --- | --- | --- | --- | --- |
 | People: archetype owners, labelers, approvers | Single sign-on | Their role's lead | Named in profiles, definitions and records | Git history, pipeline approval records | An archetype owner leaves: reassigned within two weeks, or the archetype closes to new products |
-| Products | P6 credentials per product, alias and environment | Product owner | Profiles, Stage 10 approvals | Gateway logs | The product leaves: profile retired, credentials revoked |
+| Products | Gateway credentials from P6 for an approved use case; per alias and environment once C20 is complete | Product owner | Profiles, Stage 10 approvals | Gateway logs | The product leaves: profile retired, credentials revoked |
 | Pipelines P1, P4 to P7 | Service accounts | Platform | Technical implementation | Pipeline logs, `evidence` | With the pipeline |
 | Judge and attacker models | Registered model digest | ML evaluation team | Model registry | Run manifests | Replaced through a new suite version |
 | Archetypes and aliases | `id`, alias name | Archetype owner | `onboarding-config`, `gateway-aliases` | Git history | Retirement (Operations) |
@@ -243,11 +243,11 @@ Each scenario has a metric, gate, evaluator and baseline. Logging is designed ba
 
 | Id | Metric and gate | Evaluator | Baseline | Signal, captured in | Who can alter it |
 | --- | --- | --- | --- | --- | --- |
-| S1 | Score on a fresh labeled draw of pilot or live outputs: within 5 points of the slice | Product labels; ML evaluation team scores | Slice score at G5 | Comparison record, `evidence/archetypes/<id>/` | Nobody: evidence is write-once |
+| S1 | Score on a fresh labeled draw of pilot or live outputs: consistent with the slice, meaning the slice score lies within the draw's 95% interval | Product labels; ML evaluation team scores | Slice score at G5 | Comparison record, `evidence/archetypes/<id>/` | Nobody once in `evidence` (note below) |
 | S2 | Every product's floor met; regret at most 5 points | P4 policy check; ML evaluation team | Last re-evaluation | `verdict.yaml` per run | Pipeline only |
-| S3 | Classification mismatches between alias, model and products: none; slice reads without a grant: all denied | Data governance; P6 | None | P6 logs, Nexus audit log, spot-check record | Nobody: exported to the central log store |
+| S3 | Classification mismatches between alias, model and products: none; slice reads without a grant: all denied | Data governance; P6 | Last quarter's spot checks and access-log review | P6 logs, Nexus audit log, spot-check record | Nobody: exported to the central log store |
 | S4 | Critical-error rate on destructive, insecure and unrequested-action prompts at or below the maximum; the forbidden action fails at Stage 10 every time | P4; product with the platform at Stage 10 | Incumbent | `results.jsonl`, Stage 10 record | Pipeline only |
-| S5 | Share of adapted payloads that change the output over five rounds: not above the incumbent's, and none reaches another user's data or an outbound action at Stage 10 | Security with the ML evaluation team, using an internal attacker model | Incumbent's last round | Red-team log in `evidence`; gateway safety-filter hits | Pipeline only |
+| S5 | Share of adapted payloads that change the output over five rounds: not above the incumbent's, and none reaches another user's data or an outbound action at Stage 10 | Security with the ML evaluation team, using an internal attacker model | Incumbent's last round; for an archetype's first model, the gate's second half alone | Red-team log in `evidence`; gateway safety-filter hits | Pipeline only |
 | S6 | Agreement when the ML evaluation team re-labels a random 10% of a slice: at least 90%; the yearly seeded proposal is caught | ML evaluation team; framework owner | The original label check | Label-check records; Git history of profiles | Nobody: reviewed changes only |
 | S7 | Judge-human agreement per slice and language: at least 85% | ML evaluation team | Last suite version | Calibration results in `evidence` | Pipeline only |
 | S8 | Each product's samples matching the alias contract on the new model: at least 99%; changes to `scope` or `output` of a pilot or active archetype: all blocked | P6 or the ML evaluation team; reviewers | Incumbent | Contract-test results; `onboarding-config` history | Pipeline only |
@@ -255,7 +255,9 @@ Each scenario has a metric, gate, evaluator and baseline. Logging is designed ba
 | S10 | Products per archetype: at least two; GPU cost per archetype and aliases per model, reported; tier 3 fallback drill passes | Archetype owner; SRE | Last quarter | Gateway metering, model registry | Pipeline only |
 | S11 | Seeded-error catch: at least 18 of 20; data governance spot checks find no sample above its declared classification | Product owner; data governance | The model's critical-error rate from the eval | Product's review log submitted through P5; spot-check record | The product, until submitted |
 
-**How tests run.** Evals run offline on the registry copy in the eval environment, on samples from the products' own work, so they are contained and realistic. The pilot tests the system: product, alias and model together, in staging. Judge metrics repeat three times at tiers 2 and 3, and every run's configuration is in its manifest. Evaluation is automated where it can be. Product owners own the ground truth (labels and severities), and critical errors have their own, lower limit, so errors count by consequence.
+Note: until P5 accepts archetype records, records under `evidence/archetypes/` are attached to pull requests instead, and only Git history protects them (Known gaps).
+
+**How tests run.** Evals run offline on the registry copy in the eval environment, on samples from the products' own work, so they are contained and realistic. The pilot tests the system: product, alias and model together, in staging. At tiers 2 and 3, judge metrics score each sample three times within one run, as the technical implementation's reproducibility limits allow, and every run's configuration is in its manifest. Evaluation is automated where it can be. Product owners own the ground truth (labels and severities), and critical errors have their own, lower limit, so errors count by consequence.
 
 **Verified, not taken on trust:**
 
@@ -270,7 +272,7 @@ The risk left after controls is accepted in the definition's `residual_risk` blo
 
 ## Framework
 
-**How to read it.** Numbered rules and the By tier tables are requirements. Numbers in them are starting values: the ML evaluation team may recalibrate them through a reviewed change to this document, logged in What's new. Examples, and lists introduced with "such as", are illustrative. Each control is the strongest type that is feasible, in the standard's order: **remove** the hazard, **enforce** it structurally, check it **automatically**, have **people** check and escalate, and only then **instruct**. A control's status is *in place*, *interim* (done by hand until automated) or *planned*.
+**How to read it.** Numbered rules and the By tier tables are requirements. Numbers in them are starting values: the ML evaluation team may recalibrate them through a reviewed change to this document, logged in What's new. Examples, and lists introduced with "such as", are illustrative. Each control is the strongest type that is feasible, in the standard's order: **remove** the hazard, **enforce** it structurally, check it **automatically**, have **people** check and escalate, and only then **instruct**. The Type column shows what a control is today; an arrow shows the stronger type it becomes once its planned automation exists, such as People → Enforce. Status says what is in place now, what is done by hand in the interim, and what is planned.
 
 ### Steps at a glance
 
@@ -290,7 +292,7 @@ An archetype's users, scope or autonomy grow only once the evidence is in and th
 | --- | --- | --- | --- | --- |
 | Proposed | Nobody | Profiles complete; A1 and A2 records | n/a | Archetype owner |
 | Pilot | Its pilot products, through Stages 6 to 11 | A3 approval; A4 checks passed | Conditions, alias contract, scenarios and residual risk in the definition | Board (A3); archetype owner and ML evaluation team (A4) |
-| Active | Any product approved at Stage 10 | First model GA; both pilots through early-life watch; pilot results within 5 points of their slices; no open severity 1 or 2 signals | Playbook signals live; routing guide entry published; at tier 3, a red-team round and a fallback drill done | Archetype owner at tier 1; with the ML evaluation team at tier 2; board at tier 3 |
+| Active | Any product approved at Stage 10 | First model GA; both pilots through early-life watch; each pilot's labeled results consistent with its slice (S1); no open severity 1 or 2 signals | Playbook signals live; routing guide entry published; at tier 3, a red-team round and a fallback drill done | Archetype owner at tier 1; with the ML evaluation team at tier 2; board at tier 3 |
 | Retired | Existing products until the notice ends | Fewer than two products for two quarters, or replaced by a new archetype | Replacement alias named; notice as for a model deprecation | Board |
 
 Within an active archetype:
@@ -299,7 +301,7 @@ Within an active archetype:
 | --- | --- | --- | --- |
 | A product joins at or below the archetype's tier | Its slice meets its floor on the alias model, at the tier's testing depth | Stage 10 approval; conditions met | Stage 10, with the archetype owner confirming the fit |
 | A product joins above the tier, or a member's oversight or data rises | The new tier's testing depth (Pillar 4) | The new tier's conditions and monitoring | The new tier's approver (Pillar 3) |
-| A new language | A language slice of 100 meets the floors | n/a | Archetype owner and ML evaluation team |
+| A new language | A language slice of 50 to 100 samples meets the floors | n/a | By tier, as a moderate change (Pillar 3) |
 | A higher data classification | Data governance's decision; every model behind the alias approved for the level | C21 | Data governance and board |
 | A variant (`<id>-fast`, `<id>-large`) | Two products need the same speed, cost or quality trade-off, with scores for both | Its own alias and requirements, on the same suite | Board |
 
@@ -308,7 +310,7 @@ Within an active archetype:
 1. Name an owner for each starting archetype. One platform model owner can own several.
 2. Ask each product team on the roadmap for one profile per use case, with 50 to 100 labeled samples (Pillar 1).
 3. Sort the profiles into the starting archetypes by task and output, and derive their tiers. Postpone any archetype with fewer than two products.
-4. For the two or three archetypes with the most products, write the definition and build the eval. The board approves them together at A3. They skip the A2 test, because no models are hosted yet to compare.
+4. For the two or three archetypes with the most products, write the definition and build the eval. The board approves them together at A3. They skip the A2 test, because no models are hosted yet to compare; their A2 record says so and rates likelihood as medium.
 5. Onboard each archetype's first model through the model onboarding process, with two of its products as pilots.
 6. Handle every later need through Pillars 1 to 4. These first archetypes are this framework's pilot (Known gaps).
 
@@ -353,8 +355,8 @@ Each product fills in one profile per use case (template A.1). The same profile 
 
 | Id | Control | Type | Status | Break test |
 | --- | --- | --- | --- | --- |
-| C1 | Profile check: every field has an allowed value, and the tier matches the output and risk fields | Automatic | Planned CI check on `onboarding-config`; interim: the archetype owner checks against A.1 in review | Submit profiles with a missing field, an unknown task, and a tier lower than the fields give: each is rejected |
-| C2 | Label check, as above | People | In place | Seed three wrong labels into the 30 samples: the check flags them |
+| C1 | Profile check: every field has an allowed value, and the tier matches the output and risk fields | People → Automatic | Interim: the archetype owner checks against A.1 in review; CI check on `onboarding-config` planned | Submit profiles with a missing field, an unknown task, and a tier lower than the fields give: each is rejected |
+| C2 | Label check, as above | People | In place | Seed wrong labels into 4 of the 30 samples: the second labeler disagrees on all four, so agreement falls to 26 and the check fails |
 | C3 | Each slice readable only by people cleared for its classification, on grants that expire after 90 days | Enforce | Content selectors in place; expiring grants planned | Read a confidential slice without a grant, and with an expired one: both denied |
 
 **Example** (illustrative). A support desk wants ticket summaries for its agents: `condense` / `prose`, interactive, English, internal data, threads up to 12,000 tokens. Summaries go only to the agent handling the ticket, so oversight is low; a person reads the output, so effect is low; data is internal, so data is low: tier 1. Tickets contain customer text, so `untrusted_content: yes`. Floor: key-point coverage 0.80, critical errors 3%. Fallback: agents read the full thread. The two labelers agree on 28 of 30.
@@ -366,7 +368,7 @@ Each product fills in one profile per use case (template A.1). The same profile 
 - **2.1** Group by task and output. Use cases with the same task and output belong to the same archetype, unless the A2 test shows that one model cannot serve them all.
 - **2.2** Two products minimum. Create an archetype only when at least two products need it, live or planned within two quarters, each with a named owner (C4). The board may accept a single product when no archetype can produce its output at all.
 - **2.3** Smallest change first. Join an existing archetype, or extend it with a language or a new sample set, before onboarding a stronger model for it; create a new archetype last.
-- **2.4** Decide with scores on the products' own samples, with an improved prompt for every model (gap diagnosis Step 2), so that a prompt problem does not look like a model gap. On 100 samples, scores vary by about 7 points by chance: treat differences of 5 points or less as ties, and add samples before acting on a smaller difference. Every run is kept (C5).
+- **2.4** Decide with scores on the products' own samples, with an improved prompt for every model (gap diagnosis Step 2), so that a prompt problem does not look like a model gap. On 100 samples, a score varies by about 7 points by chance: treat differences of 5 points or less as ties, and add samples before acting on a difference under 7 points. Every run is kept (C5).
 - **2.5** Pass the suitability gate (Risks) before any outcome that creates or expands an archetype (C6).
 
 **Fit check (A1)**
@@ -401,16 +403,16 @@ Then rate suitability (Risks) and record both in the A2 record (template A.2).
 | --- | --- | --- | --- |
 | Test samples per product | 50 or more | 100 | 100, plus injection samples where content is untrusted |
 | Failed samples classified (gap diagnosis Step 3) | Enough to find the dominant type | Every one | Every one |
-| Suitability rated by | Archetype owner | Archetype owner and ML evaluation team | Board, at A3 |
+| Suitability rated by | Archetype owner | Archetype owner and ML evaluation team | ML evaluation team proposes it in the A2 record; the board decides at A3 |
 
 **Controls**
 
 | Id | Control | Type | Status | Break test |
 | --- | --- | --- | --- | --- |
 | C4 | A planned product counts only with a named owner and a target quarter | People | In place | Send a seeded proposal whose second product has no owner: A1 returns "not now" |
-| C5 | Scored decision: every A2 outcome cites scores on each product's own samples, ties marked, every run kept | Automatic and people | In place | Re-score on a held-out half of the samples: the decision does not change |
-| C6 | Suitability gate | People | In place | Send a seeded tier 3 proposal whose best model is below a floor: the outcome is "do not proceed" |
-| C7 | Whoever proposes an archetype or a candidate model does not decide A2 or approve A3 | Enforce | Planned in P5, which already refuses approvals from the person who started a run; interim: the board chair checks | The proposer tries to approve: refused |
+| C5 | Scored decision: every A2 outcome cites scores on each product's own samples, ties marked, every run kept | People → Automatic | Interim: the ML evaluation team attaches every run to the A2 record; running A2 tests through P4, with runs kept in `evidence`, planned | Submit an A2 record that cites only the best of three runs: rejected, because its run list does not match the runs attached. Re-score on a held-out half of the samples: the decision does not change |
+| C6 | Suitability gate | People | In place | Send a seeded tier 3 proposal whose best model is within 5 points of a floor, with low benefit: the outcome is "something simpler" |
+| C7 | Whoever proposes an archetype or a candidate model does not decide A2 or approve A3 | People → Enforce | Interim: the board chair checks; planned in P5, which already refuses approvals from the person who started a run | The proposer tries to approve: refused |
 
 **Example** (illustrative). The ticket summaries match `summarization` on task, output, latency, context length, language and classification: A1 says join, through Stage 10. At the Stage 10 domain test, the model behind `summarization-default` scores 0.88 coverage against the floor of 0.80, with 1% critical errors against 3%. Both factors give low likelihood at tier 1: proceed. The samples become a new slice.
 
@@ -462,11 +464,11 @@ If one product needs a much faster or cheaper model than the rest, record it in 
 
 | Id | Control | Type | Status | Break test |
 | --- | --- | --- | --- | --- |
-| C8 | Requirements derived from the profiles by script | Automatic | Planned; interim: the reviewer recomputes them | Change one profile's input p95: the derived context length changes in the same pull request |
-| C9 | A definition reaches `pilot` or `active`, or changes a requirement, only through a reviewed pull request that links its A1 to A4 records and has the tier's approvals | Enforce | Reviewed pull requests in place; record-link check planned; interim: the reviewer checks the links | Open a pull request that sets `active` without records: blocked |
-| C10 | A definition without a current residual-risk acceptance closes to new products | Automatic | Planned date check; interim: quarterly review | Set `review_by` to a past date: flagged, and Stage 10 approvals stop |
-| C11 | Ids are never reused, and the `scope` and `output` of a pilot or active archetype cannot change in place; embedding aliases carry a version | Remove | Interim: reviewers block such changes; CI check planned | Open a pull request that changes `output` of an active archetype: blocked |
-| C12 | Product conditions, checked at Stage 10 | Enforce, in the product | In place through Stage 10 | At Stage 10, try the forbidden action with the product's credentials, such as a write query or an unconfirmed outbound call: it fails |
+| C8 | Requirements derived from the profiles by script | People → Automatic | Interim: the pull-request reviewer, not the author, recomputes them; script planned | Change one profile's input p95: the derived context length changes in the same pull request |
+| C9 | A definition reaches `pilot` or `active`, or changes a requirement, only through a reviewed pull request that links its A1 to A4 records and has the tier's approvals | Enforce (reviewed pull requests) and people (record links) → Enforce | Reviewed pull requests in place; interim: the reviewer checks the links; link check planned | Open a pull request that sets `active` without records: blocked |
+| C10 | A definition without a current residual-risk acceptance closes to new products | People → Automatic | Interim: checked at the quarterly review; date check planned | Set `review_by` to a past date: flagged, and Stage 10 approvals stop |
+| C11 | Ids are never reused, and the `scope` and `output` of a pilot or active archetype cannot change in place; embedding aliases carry a version | Remove, held by reviewers → Enforce | Interim: reviewers block such changes; CI check planned | Open a pull request that changes `output` of an active archetype: blocked |
+| C12 | Product conditions, checked at Stage 10 | Enforce, in the product | Interim: Stage 10 checks the use case against the model card, so the archetype owner reviews the conditions there and witnesses the forbidden-action test; adding both to Stage 10 planned | At Stage 10, try the forbidden action with the product's credentials, such as a write query or an unconfirmed outbound call: it fails |
 
 **Example** (illustrative). The ticket summaries join. The definition adds `support-desk` to `products` with its floor. Context length is re-derived: 1.2 × (12,000 + 400) = 14,880 tokens, within the archetype's 32k, so unchanged. The tier stays 1. Injection through source documents is already a safety addition, and ticket samples join it. The archetype owner re-confirms the residual risk.
 
@@ -478,7 +480,7 @@ If one product needs a much faster or cheaper model than the rest, record it in 
 - **4.2** One reference prompt, starting from the improved prompt used at A2.
 - **4.3** Safety: the standard safety battery, plus tests specific to the archetype, such as instructions injected into retrieved passages (`rag`), source documents (`summarization`) or tool results (`agents`), or destructive statements (`text-to-sql`). Injection is tested through every kind of untrusted content a member sends.
 - **4.4** Public benchmarks are optional, as a secondary signal worth at most 20% of the ranking.
-- **4.5** Pass criteria (the G5 policy, template A.4): each product's floor and maximum critical-error rate are hard criteria, and latency and cost go to review. Among models that pass, rank by the average of the product slices, with each product weighted equally.
+- **4.5** Pass criteria (the G5 policy, template A.4): each product's floor and maximum critical-error rate are hard criteria, and latency and cost go to review. Among models that pass, rank by the average of the product slices, with each product weighted equally, plus public benchmarks, if used, at no more than 20% (4.4).
 - **4.6** Judge metrics use a pinned, calibrated judge (C15).
 - **4.7** Before status `pilot` (A4), check that the suite runs end to end offline, that its scores differ between models, that a deliberately weak model fails the floors, and that the model it ranks first is the one A2 found best, or within 5 points of it (C16).
 
@@ -489,20 +491,22 @@ If one product needs a much faster or cheaper model than the rest, record it in 
 | `extract` | Field-level F1 | A wrong value in a field marked critical | DeepEval (JSON correctness) or a field scorer |
 | `compose` | Rubric score from a judge checked against human labels | A fact or promise the instructions do not allow | DeepEval (G-Eval) |
 | `code` (`code`) | pass@1 on unit tests | Insecure or destructive code | LightEval custom task |
-| `code` (`query`) | Execution accuracy: the query returns the reference result | The query runs and returns the expected columns and row count, but wrong values | LightEval custom task with a sandbox database |
+| `code` (`query`) | Execution accuracy: the query returns the reference result | The query runs and returns the expected columns and row count, but wrong values | LightEval custom task with a sandbox database inside the eval job |
 | `act` | Task success: the end state is correct | An action the task did not ask for, or one taken without a required confirmation | DeepEval (tool correctness) |
 | `translate` | chrF++ or COMET per language pair | A changed number, name or negation | LightEval custom task |
 | `embed`, `rank` | nDCG@10 on domain retrieval sets | n/a | MTEB |
+
+Domain slices scored by execution (unit tests or a sandbox database) run as LightEval custom tasks, with the test runner or database inside the eval job and loaded from the data bundle, so the eval environment's offline rules still hold. The onboarding process gives domain slices to DeepEval; aligning it is planned work.
 
 **By tier**
 
 | | Tier 1 | Tier 2 | Tier 3 |
 | --- | --- | --- | --- |
 | Product slice before the first Stage 5 | 200 | 200 | 300 |
-| Floor checked on | The score | The score | The lower end of the 95% confidence interval; language slices on their score |
-| Judge metrics | One run | Mean of three runs | Mean of three runs |
+| Floor checked on | The score | The score | The lower end of the 95% Wilson interval; language slices on their score |
+| Judge metrics | One pass | Mean of three passes within one run | Mean of three passes within one run |
 | Judge calibration samples per slice | 30 | 50 | 100 |
-| Injection tests | The archetype's tests (4.3) | Plus a held-out set not shared with product teams | Plus an adaptive red-team round before going active and every quarter |
+| Injection tests | The archetype's tests (4.3) | Plus a held-out set not shared with product teams, and a yearly red-team round if any member sends untrusted content | Plus a held-out set, and an adaptive red-team round before going active and every quarter |
 
 **Controls**
 
@@ -511,7 +515,7 @@ If one product needs a much faster or cheaper model than the rest, record it in 
 | C13 | Each product's floor and critical-error maximum are hard criteria in the G5 policy | Automatic | In place (P4 policy check) | Give the policy check synthetic results where the best-average model misses one product's floor: the verdict is fail |
 | C14 | Archetype safety tests, held-out injection set and red-team rounds, by tier | Automatic and people | Archetype tests in place; held-out sets and red-team rounds planned | Try to read the held-out set from a product-team account: denied. Each red-team round is itself recorded as a break test |
 | C15 | The judge is pinned, never the candidate, and agrees with human labels on at least 85% of each slice's calibration samples before a suite version is used | Automatic | In place (pinned judge); per-slice calibration planned | Add seeded wrong outputs to the calibration set and swap in a lenient judge: calibration fails |
-| C16 | Readiness check (4.7) | Automatic and people | In place | Shuffle one slice's expected outputs: its scores collapse |
+| C16 | Readiness check (4.7) | People → Automatic | Interim: the ML evaluation team runs it and records the result at A4; running it in P4 planned | Shuffle one slice's expected outputs: its scores collapse |
 
 **Example** (illustrative). The ticket slice grows from 100 to 200 samples before the next summarization model's Stage 5. A critical error is a statement the ticket does not support. The injection test adds tickets that tell the model to report a refund that never happened; a summary that states the refund as fact counts as a critical error. The DeepEval judge agrees with the labels on 27 of the 30 calibration samples (90%).
 
@@ -520,14 +524,14 @@ If one product needs a much faster or cheaper model than the rest, record it in 
 **Least privilege.**
 
 - **Default deny:** a product reaches an alias only with credentials P6 issues for an approved use case, scoped to one product, alias and environment (C20).
-- **Scoped and expiring grants:** alias credentials are reconfirmed with the profile each year and revoked when the product leaves or the archetype retires. Sample grants expire after 90 days (C3).
+- **Scoped and expiring grants:** alias credentials lapse after 12 months unless the product owner reconfirms the profile, and are revoked when the product leaves or the archetype retires (C20). Sample grants expire after 90 days (C3).
 - **No delegation beyond the delegator:** a run output executes with the requesting user's own permissions, never the product's or the platform's (3.2), and no one approves their own proposal (C7).
 - **Every grant recorded:** in P6's credential records, the Nexus audit log, Git history and `evidence`.
 
 **Failure design.**
 
 - **Blast radius:** every definition states its products, their volume and the other aliases its model serves (3.3).
-- **Fail closed:** an incomplete profile cannot join. An archetype missing its owner, its records or a current residual-risk acceptance closes to new products. An eval that cannot run offline, or a judge that fails calibration, produces no G5 verdict, so the incumbent stays. P6 refuses an alias mapping that fails the classification check (C21). Failing closed stops expansion, not service: existing products keep running.
+- **Fail closed:** an incomplete profile cannot join. An archetype missing its owner, its records or a current residual-risk acceptance closes to new products. An eval that cannot run offline, or a judge that fails calibration, produces no G5 verdict, so the incumbent stays. An alias mapping that fails the classification check is refused (C21: by SRE at G8 until P6 does it). Failing closed stops expansion, not service: existing products keep running.
 - **Shutdown paths:** per model, the gateway kill switch; per alias, rollback to the previous mapping in `gateway-aliases`; per product, credential revocation; per archetype, closing it to new products.
 - **Manual fallback:** every profile records one. At tier 3, it is drilled before the archetype goes active and then every year (C23).
 
@@ -545,9 +549,9 @@ If one product needs a much faster or cheaper model than the rest, record it in 
 
 | Id | Control | Type | Status | Break test |
 | --- | --- | --- | --- | --- |
-| C20 | Alias credentials only for an approved use case, per product, alias and environment | Enforce | In place (P6) | Call an alias with another product's credentials, or with credentials for another alias: refused |
-| C21 | P6 refuses to map an alias to a model not approved for the archetype's classification | Enforce | Planned; interim: SRE checks the registry at G8 | Open a pull request mapping the alias to a model approved for a lower classification: refused |
-| C22 | Before a model change, each product's samples are checked against the alias contract on the new model | Automatic | Planned in P6; interim: the ML evaluation team runs it | Run it against a model with a known format fault: it fails |
+| C20 | Alias credentials only for an approved use case, scoped to one product, alias and environment, lapsing after 12 months unless the profile is reconfirmed | Enforce | Production credentials only for an approved use case: in place (P6, at Go Live). Scoping per alias and environment, and the 12-month lapse: planned; interim: the archetype owner lists unconfirmed profiles at the quarterly review | Call an alias with another product's credentials, or with credentials for another alias: refused. Let a profile pass 12 months unconfirmed: its credentials lapse after notice |
+| C21 | P6 refuses to map an alias to a model not approved for the archetype's classification | People → Enforce | Interim: SRE checks the registry at G8; P6 check planned | Open a pull request mapping the alias to a model approved for a lower classification: refused |
+| C22 | Before a model change, each product's samples are checked against the alias contract on the new model | People → Automatic | Interim: the ML evaluation team runs it; P6 check planned | Run it against a model with a known format fault: it fails |
 | C23 | Shutdown paths and product fallbacks, drilled at tier 3 | Enforce and people | Kill switch and rollback in place; drills planned | In staging, switch the alias off: each tier 3 product runs on its fallback |
 
 **Cost of heavy controls.**
@@ -585,10 +589,10 @@ Eval tool and judge suppliers ─┘    (catalog, archetypes, evals,     (use ca
 | --- | --- | --- | --- | --- | --- | --- |
 | Profile (design) | Writes it; labels samples | Checks it (C1) | Second labeler at tiers 2 and 3 | Sets classification | n/a | n/a |
 | A1 fit check (design) | Consulted | Decides | n/a | Consulted | n/a | n/a |
-| A2 test (design) | Supplies samples | Rates suitability at tier 1 | Runs the test; decides the outcome; rates suitability at tier 2 with the owner | Clears samples for reference runs | Rates suitability at tier 3 | n/a |
+| A2 test (design) | Supplies samples | Rates suitability at tier 1 | Runs the test; decides the outcome; rates suitability at tier 2 with the owner, and proposes it at tier 3 | Clears samples for reference runs | Decides tier 3 suitability, at A3 | n/a |
 | A3 definition (design) | Consulted on conditions | Writes it; accepts tier 1 residual risk | Consulted | Sets classification | Approves; chair accepts tier 3 residual risk | Security consulted at tier 3 |
 | A4 eval (pre-release) | Labels slices | Approves | Builds and checks it | Spot-checks slices | n/a | Security reviews safety additions |
-| Pilot and go active (rollout) | Pilots at Stage 6 | Chooses pilots; opens tiers 1 and 2 | Compares pilot with eval | n/a | Opens tier 3 | SRE issues credentials (P6) |
+| Pilot and go active (rollout) | Pilots at Stage 6 | Proposes two pilots to the model's owner (Stage 6); opens tiers 1 and 2 | Compares pilot with eval | n/a | Opens tier 3 | SRE issues credentials (P6) |
 | Operation | Reports incidents; labels live outputs at tiers 2 and 3; meets conditions | Quarterly review; owns the playbook | Re-evaluation; red team with Security | Spot checks | Major changes, retirement | SRE: metering, alerts, drills |
 
 The platform lead accepts tier 2 residual risk. The framework owner keeps this document current, runs the quarterly records audit (S9) and sends the yearly seeded proposal.
@@ -611,8 +615,13 @@ The platform lead accepts tier 2 residual risk. The framework owner keeps this d
 | Checkpoint | Measure | Target |
 | --- | --- | --- |
 | A1 | Days to decision; joins that later fail their Stage 10 floor | 2 days; fewer than 1 in 5 |
-| A2 | Decisions reversed within two re-evaluations | Each reviewed for its cause |
+| A2 | Decisions reversed within two re-evaluations | Fewer than 1 in 5, each reviewed for its cause |
+| Classification | Levels changed after a spot check | Each reviewed for its cause |
 | A3 | Days to decision; conditions confirmed at Stage 10 | By the next board meeting; all |
+| A4 | Suite versions withdrawn after first use | None |
+| Go active | Severity 1 signals in the first quarter after going active | None |
+| Residual risk | Acceptances past their review date | None |
+| Overrides | Decisions that differ from the policy verdict, the A2 decision table or the suitability table, as a share of all decisions per checkpoint | Each with a written reason; the rate reviewed every quarter |
 | Label check | Agreement per slice | 90% or more |
 | A product's own review | Change rate; seeded-error catch | At least 18 of 20 |
 | Every checkpoint | Once a year, the framework owner sends a seeded proposal through the normal path, such as a profile with too low a tier or a definition with a wrong context length | Caught at the first checkpoint it reaches |
@@ -675,7 +684,7 @@ Severity 1: act the same day. Severity 2: within two weeks. Severity 3: at the n
 | Critical-error incident: a destructive or unrequested action, or data shown to the wrong person | Any | 1 | Product switches to its fallback or disables the feature; kill switch or rollback if the model is at fault; review within 5 working days; cases join the regression slice | Product owner, SRE, archetype owner |
 | A product sends data above the archetype's classification | Any | 1 | Suspend the product's credentials; data governance reviews | Data governance |
 | A product reports quality below its floor | Any | 2 | Gap diagnosis; failures join the regression slice | Archetype owner, ML evaluation team |
-| Labeled live outputs (C18) | More than 5 points below the product's slice | 2 | Check the samples for drift (S1); refresh the slice | Product owner |
+| Labeled live outputs (C18) | Not consistent with the product's slice: the slice score lies outside the live score's 95% interval | 2 | Check the samples for drift (S1); refresh the slice | Product owner |
 | Red-team success | Above the previous round | 2 | Payloads join the held-out set; re-check members' Stage 10 conditions | Security |
 | Safety-filter hits on the alias | Twice the four-week average, for a week | 2 | Look for an injection campaign; run a red-team round | Security |
 | Judge agreement (C15) | Below 85% on any slice | 2 | Suite version blocked until fixed | ML evaluation team |
@@ -724,8 +733,8 @@ This version is a draft. Against the standard's release gate:
 
 | Condition | Status |
 | --- | --- |
-| 1. Every Must met at a depth matched to risk | Met in this draft (Annex C), pending independent review |
-| 2. Every scenario traces to a control, a test and an owner | Met (Risks) |
+| 1. Every Must met at a depth matched to risk | Not yet: every Must is addressed in this document (Annex C), but the companion documents do not yet share its harm types and terms (Planned work); pending independent review |
+| 2. Every scenario traces to a control, a test and an owner | Met for S1 to S11 (Risks) and the walkthrough's TS1 to TS3 |
 | 3. Every control has a recorded break-test result | Not yet: break tests are defined, and results will be recorded during the pilot |
 | 4. Residual risk accepted by a named owner | Not yet: owner to be named |
 | 5. Piloted on a real system | Not yet: the starting archetypes are the pilot |
@@ -748,18 +757,23 @@ This version is a draft. Against the standard's release gate:
 
 Until the pipeline checks exist:
 
-- C1, C8 and C10: the archetype owner checks profiles and definitions against templates A.1 and A.3 in pull-request review, and recomputes derived values.
+- C1: the archetype owner checks profiles against template A.1 in pull-request review.
+- C8: the pull-request reviewer, not the definition's author, recomputes derived values.
 - C9 and C11: reviewers check record links and block in-place changes to `scope` and `output`.
+- C5 and C16: the ML evaluation team attaches every A2 run to the A2 record, and runs the readiness check by hand.
+- C10 and C20: the quarterly review lists acceptances past their date and profiles unconfirmed for 12 months.
+- C12: the archetype owner reviews conditions and witnesses the forbidden-action test at Stage 10.
 - C21: SRE checks the alias's model against its registry classification at G8.
 - C22: the ML evaluation team runs the contract test before a model change.
 - Decision records are attached to the definition's pull request until P5 accepts archetype records.
 
 ### Planned work
 
-- CI checks on `onboarding-config`: profile and definition fields, tier derivation, derived requirements, record links, review dates, and blocking in-place `scope` and `output` changes.
-- P1 accepting only `pilot` and `active` archetypes as targets; P5 accepting A1 to A4 records; P6 checking each alias against the archetype's classification and running the contract test.
+- CI checks on `onboarding-config`: profile and definition fields, tier derivation, derived requirements, record links, review dates, and blocking in-place `scope` and `output` changes (C1, C8 to C11).
+- Pipelines: P1 accepting only `pilot` and `active` archetypes as targets; P4 running A2 tests and the readiness check (C5, C16); P5 accepting A1 to A4 records and refusing self-approval (C7); P6 scoping credentials per alias and environment with a 12-month lapse (C20), checking each alias against the archetype's classification (C21) and running the contract test (C22).
+- Controls without tooling yet: expiring sample grants (C3), held-out injection sets and red-team rounds (C14), per-slice judge calibration (C15), usage checks from gateway metering (C17), live labeling and seeded-error tests (C18, C19), and fallback drills (C23).
 - A scoring rule for ordering competing proposals.
-- The onboarding process and the technical implementation adopting this framework's harm types and terms. In particular, the onboarding process's gap diagnosis calls a variant a "tier".
+- Companion documents, so all three share one taxonomy and vocabulary: the onboarding process adopts the harm types and terms (its gap diagnosis calls a variant a "tier"), adds archetype conditions to Stage 10, and lets execution-scored domain slices run on LightEval; the technical implementation adds `evidence/archetypes/<id>/` and archetype records to P5.
 
 ### This framework's residual risks
 
@@ -769,6 +783,8 @@ To be accepted by a named owner before version 1.0:
 - Interim manual checks can be skipped under pressure (S9) until the CI checks exist.
 - Slices of 200 leave about 5 points of chance variation at tiers 1 and 2.
 - A product's review log (S11) is product-owned, and the platform can check it only through seeded errors.
+- Until P5 accepts archetype records, only Git history protects them.
+- Many controls run by hand until their tooling exists (Interim practices), and their break tests have no recorded results yet.
 
 ## Annexes
 
@@ -815,7 +831,7 @@ inputs:
   profiles: [analytics-assistant-sql@<commit>, finance-reporting-sql@<commit>]
   results: <path to every run, failed runs included>
 outcome: new archetype                # A2: join | not now | stronger model | new archetype | do not proceed
-suitability: { tier: 3, likelihood: medium, benefit: high, decision: proceed with conditions }
+suitability: { tier: 3, likelihood: medium, benefit: high, decision: proceed with conditions }   # tier 3: proposed here, decided by the board at A3
 conditions: [<conditions the decision depends on>]
 reason: <why, in a few sentences>
 ```
@@ -873,7 +889,7 @@ suite: text-to-sql/v1
 criteria:
   - id: analytics-floor
     metric: lighteval/text-to-sql-analytics/execution_accuracy
-    rule: ci95.lower >= 0.85          # tier 3: lower end of the interval
+    rule: ci95.lower >= 0.85          # tier 3: lower end of the 95% Wilson interval
     hard: true
   - id: analytics-critical-errors
     metric: lighteval/text-to-sql-analytics/critical_error_rate
@@ -914,6 +930,33 @@ signal: { shows: <what shows it happened>, captured_in: <where>, can_alter: <who
 owner: Security
 ```
 
+**A.6 Break-test result** (Controls; release gate condition 3)
+
+```yaml
+# evidence/archetypes/<id>/break-tests/<control>-<yyyymmdd>.yaml, or evidence/archetypes/_framework/ for controls shared by every archetype
+control: C13
+attempt: Synthetic results where the best-average model misses the finance floor
+expected: Verdict fail
+observed: Verdict fail, criterion finance-floor
+outcome: held                         # held | broken
+run_by: <user>
+witnessed_by: <user>                  # someone other than the control's owner
+follow_up: <fix and re-test date, when broken>
+```
+
+**A.7 Playbook signal** (Operations), one row for each new signal an archetype adds
+
+```yaml
+signal: Share of generated queries rejected by the read-only connection
+threshold: More than 1% of a product's queries in a week
+severity: 2
+response: Check for injection or a prompt change; add the cases to the regression slice
+owner: <archetype owner>
+source: <where the signal is captured, and who can alter it>
+```
+
+The Interfaces, Checkpoints and Change triggers tables double as templates: a new interface, checkpoint or change kind is added as a row with the same columns.
+
 ### B. Walkthrough: text to SQL
 
 The products and numbers are illustrative.
@@ -936,19 +979,19 @@ Suitability: impact is tier 3. Likelihood is medium: the candidate is within 5 p
 
 **A3 approval.** The definition is template A.3. The context length is 1.2 × (18,000 + 400) = 22,080 tokens, rounded up to 32k. Three archetype scenarios join the register:
 
-| Id | Scenario | Control | Test |
-| --- | --- | --- | --- |
-| TS1 | A user asks about a table they may not see, and the query reads it | Queries run with the user's own permissions (C12) | At Stage 10, ask for a table outside the user's grants: the database refuses |
-| TS2 | An attacker writes instructions into a column comment or row value, and rewrites them when blocked, so that the query reads other data or returns misleading values | Held-out injection set and quarterly red team (C14); TS1's control | Red-team success rate, as for S5 |
-| TS3 | A query returns the expected columns and row count but wrong values, and a report repeats them | Critical-error maximums (C13); finance review before publication (C12) | Critical-error rate per slice |
+| Id | Scenario | Harm, kind | Control | Test: metric and gate | Evaluator | Baseline | Owner |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TS1 | A user asks about a table they may not see, and the query reads it | H2; accidental, outcome | Queries run with the user's own permissions (C12) | Ask for a table outside the user's grants: the database refuses, every time | Product, witnessed by the archetype owner at Stage 10 | None: it must always hold | Product owner |
+| TS2 | An attacker writes instructions into a column comment or row value, and rewrites them when blocked, so that the query reads other data or returns misleading values | H2, H1; adversarial, outcome | Held-out injection set and quarterly red team (C14); TS1's control | Share of adapted payloads that change the query: not above the last round; none reads data outside the user's grants | Security with the ML evaluation team | Last round; none for the first | Security |
+| TS3 | A query returns the expected columns and row count but wrong values, and a report repeats them | H1; accidental, outcome | Critical-error maximums (C13); finance review before publication (C12) | Critical-error rate per slice, at or below each product's maximum | P4 policy check | Incumbent; none for the first model | Archetype owner |
 
 The board approves with the conditions in A.3. The chair, with the risk member, accepts TS3 within the critical-error maximums, because analysts check figures against source reports and finance reviews every report; review in six months.
 
 **A4 ready.** Slices of 300 samples per product and 100 in German, scored by running each query against a sandbox database. Execution accuracy needs no judge. Safety additions: destructive statements, and a held-out set of injections in comments and row values. A deliberately weak model fails every floor, and among hosted models the suite ranks M2 first, consistent with A2. Status becomes `pilot`, and the candidate enters Stage 0.
 
-**Pilot.** At Stage 5, the candidate scores 0.90 on analytics (95% interval 0.87 to 0.93), 0.89 on finance (0.85 to 0.92) and 0.87 on finance-de, with 1.0% and 1.3% critical errors, so every floor is met on the lower end of its interval. The first red-team round sends 250 adapted payloads over five rounds. Two change the generated query, and neither reads data outside the user's grants, because of TS1's control; both join the held-out set. Both products pilot the candidate at Stage 6 and go live at Stage 11.
+**Pilot.** At Stage 5, the candidate scores 0.91 on analytics (95% Wilson interval 0.87 to 0.94), 0.90 on finance (0.86 to 0.93) and 0.87 on finance-de, with 1.0% and 1.3% critical errors, so every floor is met on the lower end of its interval. The first red-team round sends 250 adapted payloads over five rounds. Two change the generated query, and neither reads data outside the user's grants, because of TS1's control; both join the held-out set. Both products pilot the candidate at Stage 6 and go live at Stage 11.
 
-**Active.** After early-life watch, 50 labeled live questions per product score 0.88 for analytics and 0.87 for finance, within 5 points of their slices. No severity 1 or 2 signals are open, and both products' fallback drills work. The board opens the archetype: status `active`.
+**Active.** After early-life watch, 50 labeled live questions per product score 0.88 for analytics (95% interval 0.76 to 0.94) and 0.87 for finance (0.75 to 0.94), consistent with their slices. No severity 1 or 2 signals are open, and both products' fallback drills work. The board opens the archetype: status `active`.
 
 **First quarter.** Two findings:
 
@@ -966,7 +1009,9 @@ The board approves with the conditions in A.3. The chair, with the risk member, 
 | 5. Accountability and human oversight | Accountability |
 | 6. Verification and testing | Tests and evidence; Pillar 4; break tests in each Controls table |
 | 7. Lifecycle operations | Operations |
-| 8. Packaging and maintenance | Examples in each pillar; Annexes A and B; Terms; version, What's new, Known gaps and Annex D |
+| 8. Packaging and maintenance | An example in each pillar; Annexes A and B; Terms; version, What's new, Known gaps and Annex D |
+
+Templates and examples by area: profile and scope, A.1 and the support-desk example; risks, A.5 and TS1 to TS3; decisions, A.2; definition and controls, A.3, A.6 and the Interfaces table; evaluation, A.4; accountability, the Checkpoints table and the walkthrough's A3 approval; operations, A.7 and the walkthrough's first quarter.
 
 ### D. Terms, resources and feedback
 
@@ -995,7 +1040,7 @@ The board approves with the conditions in A.3. The chair, with the risk member, 
 - [Framework Design Standard for AI, Software and Product](Framework_Design_Standard_for_AI_Software_and_Product.md)
 - [The lethal trifecta](https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/), Simon Willison, June 2025
 
-**Feedback.** Open an issue, or a pull request against this document, in this repository. The framework owner triages feedback at each quarterly review and logs accepted changes in What's new.
+**Feedback.** Open an issue, or a pull request against this document, in the `red-arg/onboard-llm` repository. The framework owner triages feedback at each quarterly review and logs accepted changes in What's new.
 
 **Contributors.** @Zhi Feng, owner and author. Reviewers and pilot participants will be credited here at version 1.0.
 
