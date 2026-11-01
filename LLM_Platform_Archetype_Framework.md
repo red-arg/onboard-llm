@@ -1,6 +1,6 @@
 # LLM Platform: Archetype Framework
 
-Version 0.3 · Oct 31, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
+Version 0.4 · Nov 1, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
 ## Purpose
 
@@ -40,14 +40,14 @@ This document tells archetype owners, product teams and the ML evaluation team w
 | --- | --- |
 | Product team | Writes profiles and labels samples; meets the archetype's conditions; reports incidents; labels live outputs at tiers 2 and 3 |
 | Archetype owner (a platform model owner) | Runs the fit check; writes the definition; proposes pilots; runs the quarterly review; acts on signals |
-| ML evaluation team | Runs the Step 3 test; builds and re-runs the eval; second-labels samples at tiers 2 and 3 |
+| ML evaluation team | Runs the Step 3 test; builds and re-runs the eval; second-labels samples at tiers 2 and 3; audits slice labels each quarter |
 | Data governance | Sets classifications; clears samples for outside models; spot-checks slices |
 | Model review board | Approves new archetypes, variants, major changes and retirements; decides tier 3 suitability and residual risk |
-| Platform lead | Accepts tier 2 residual risk |
+| Platform lead | Accepts tier 2 residual risk; reviews the catalog each quarter |
 | Security | Reviews safety tests; runs red-team rounds with the ML evaluation team |
 | SRE | Credentials, metering, alerts and fallback drills |
 
-The framework owner keeps this document current. Whoever proposes an archetype or a candidate model does not decide its Step 3 test or approve it at Step 4.
+The framework owner keeps this document current, checks every archetype's records each quarter and runs the yearly seeded proposal. Whoever proposes an archetype or a candidate model does not decide its Step 3 test or approve it at Step 4.
 
 ## Tiers
 
@@ -80,7 +80,7 @@ None high is tier 1, one is tier 2, and two or three is tier 3. An archetype's t
 
 | High dimension | Condition |
 | --- | --- |
-| Effect | Run outputs with the end user's own permissions, read-only where the task allows. A person confirms any destructive or outbound action |
+| Effect | Run outputs with the end user's own permissions, read-only where the task allows. A person confirms any destructive or outbound action. At Stage 10, the product shows that a forbidden action, such as a write query or an unconfirmed outbound call, fails with its credentials |
 | Oversight | Tell people at the point of use that the output is AI-generated and may be wrong. Route uncertain cases to a person. Keep critical errors at or below 1% |
 | Data | Send nothing above the archetype's classification. Use masked or synthetic samples for outside reference runs |
 
@@ -138,7 +138,7 @@ The archetype's status is `proposed` once Step 3 decides to create it, `pilot` a
 The product team fills in one profile per use case (template below), with 50 to 100 labeled samples from its real or planned work. The same profile describes the use case at Stage 10.
 
 - **One task per profile.** A use case with two tasks, such as answering from documents and drafting emails, is two profiles and calls two aliases. Answers from the model's own knowledge, rather than from supplied sources, are not `answer`, and no starting archetype covers them.
-- **Classification** is set by data governance.
+- **Classification** is set by data governance. Samples are stored in `eval-data`, readable only by people cleared for that classification.
 - **Tier** comes from the output and risk fields (Tiers), never chosen.
 - **Critical errors:** set `max_critical_errors` to 1% when oversight is high, and 3% otherwise.
 - **Checked outputs:** if the tier is low only because a person checks every output, the product reports its reviewers' change rate each quarter and runs a seeded-error test each year (20 known-wrong outputs, at least 18 caught). Otherwise, it counts as unchecked.
@@ -286,14 +286,18 @@ The approver depends on the tier (Tiers). Once the status is `active`, any produ
 
 At each quarterly re-evaluation, the archetype owner:
 
-1. Re-runs the eval on every model behind the alias (P7), with incident and gap diagnosis cases added to the regression slice.
+1. Reviews the P7 re-evaluation of every model behind the alias. The ML evaluation team runs it, with incident and gap diagnosis cases added to the regression slice.
 2. Re-derives the requirements and tiers for changed profiles, and asks owners to reconfirm profiles older than 12 months. Credentials for unconfirmed profiles lapse after notice.
-3. Runs Step 3 for any product whose best model has scored more than 5 points above the archetype's model at two re-evaluations in a row.
-4. Merges or retires any archetype that has had fewer than two products for two quarters.
-5. Checks residual-risk review dates, the owner and the routing guide entry, and that every pilot or active archetype has its step records with the right approvers.
+3. Asks the ML evaluation team to run Step 3 for any product whose best model has scored more than 5 points above the archetype's model at two re-evaluations in a row.
+4. Proposes a merge or retirement to the board if the archetype has had fewer than two products for two quarters.
+5. Updates the blast radius, including any other alias the archetype's model now serves, and checks the residual-risk review date and the routing guide entry.
 6. Reviews decisions that were later reversed or that overrode a rule, and their reasons.
 
-Once a year, the framework owner sends a seeded proposal, such as a profile with too low a tier, through the steps to check that it is caught.
+In the same review:
+
+- The ML evaluation team re-labels a random 10% of one product slice per archetype, taking a different slice each quarter. If fewer than 90% of the labels agree, the slice is re-labeled before it is used again.
+- The platform lead reviews products per archetype and aliases per model. Where one model backs several archetypes, the lead decides with the model's owner whether to add a fallback model (Stage 8).
+- The framework owner checks that every pilot or active archetype has an owner, its step records with the right approvers and a current residual-risk acceptance. Once a year, the framework owner also sends a seeded proposal, such as a profile with too low a tier, through the steps to check that it is caught.
 
 ### Signals
 
@@ -323,25 +327,11 @@ Severity 1: act the same day. Severity 2: within two weeks. Severity 3: at the n
 
 A higher classification also needs data governance's decision, and every model behind the alias must be approved for the new level.
 
+**Changing the model behind an alias:** on the new model, at least 99% of each product's samples must match the alias's output format. Then cut over as the onboarding process describes: shadow traffic, then a canary, then full cutover.
+
 **Retiring:** name the replacement alias and give the same notice as a model deprecation. For embeddings, products re-index before the old alias retires.
 
 **Stopping fast:** use the gateway kill switch for a model, roll back the alias mapping in `gateway-aliases`, revoke a product's credentials, or stop new products from joining. Products then run on the fallback in their profile.
-
-## Risks and controls
-
-| Risk | Control | How it is checked | Owner |
-| --- | --- | --- | --- |
-| Samples do not reflect live work, so a model passes its slice and fails in use | Samples from real work; label check; pilots before going active | Labeled live outputs are consistent with the slice | Product owner |
-| One product or language is averaged away | Each product's floor is a hard G5 criterion | Quarterly comparison of each product's best model with the archetype's model | ML evaluation team |
-| Data reaches a model or person not approved for it | Data governance sets classifications; slices are readable by classification; every model behind an alias is approved for its classification | Spot checks; alias check at G8 | Data governance |
-| A run output does damage: a destructive query, insecure code, an unrequested tool call | Effect conditions; critical-error maximums; safety tests | At Stage 10, try the forbidden action with the product's credentials: it fails | Archetype owner |
-| Injected instructions are reworded until they pass the tests | No egress at the hosting layer; trifecta check at Stage 10; held-out injection set; red-team rounds | Red-team success is no higher than in the last round | Security |
-| Someone games the samples, or names a second product that will not exist | Outside labeler at tiers 2 and 3; named owners for planned products; the proposer does not approve; every run kept | The ML evaluation team re-labels 10% of a slice: at least 90% agree | ML evaluation team |
-| The judge favors a model family, style or language | Pinned judge, never the candidate, calibrated per slice | At least 85% agreement with human labels | ML evaluation team |
-| A change breaks products | No in-place scope or output change; versioned embedding aliases; shadow and canary cutover | Before a model change, at least 99% of each product's samples match the alias's output format | Archetype owner |
-| Steps are skipped under deadline pressure | Reviewed pull requests that link the step records | Quarterly records check | Framework owner |
-| Too many archetypes, or one model behind many aliases | Two-product rule; quarterly review; blast radius in each definition; tier 3 fallbacks | Products per archetype; aliases per model; fallback drills | Platform lead |
-| A profile understates its risk | Tier derived from the fields; data governance sets the classification; seeded errors for "checked" claims | At least 18 of 20 seeded errors caught | Product owner |
 
 ## Templates
 
@@ -379,7 +369,7 @@ samples: eval-data/domain/<archetype>-<slice>/seed/       # 50 to 100 labeled sa
 # onboarding-config/archetypes/<id>.yaml
 id: text-to-sql                       # lowercase, names the capability, never reused
 owner: <platform model owner>
-status: pilot                         # proposed | pilot | active | retired
+status: proposed                      # proposed | pilot | active | retired
 task: code
 output: query
 scope: Write one read-only SQL query that answers a question over a supplied schema.
@@ -461,12 +451,6 @@ No hosted model meets the floor of 0.85. An open-weight candidate scores 0.86 on
 
 **Step 4.** The definition is the template above. Context length is 1.2 × (18,000 + 400) = 22,080 tokens, rounded up to 32k. The board judges the benefit high, because analysts wait days for the data team and finance builds its reports by hand, and approves with the conditions in the definition. The board chair, with the risk member, accepts wrong values within the critical-error maximums, for review in six months.
 
-**Step 5.** Slices of 300 samples per product and 100 in German, scored by running each query against a sandbox database inside the eval job. A deliberately weak model fails every floor, and among hosted models the suite ranks M2 first, as Step 3 did. Status becomes `pilot`, and the candidate enters Stage 0.
-
-**Step 6.** At Stage 5, the candidate scores 0.91 on analytics (95% Wilson interval 0.87 to 0.94), 0.90 on finance (0.86 to 0.93) and 0.87 on finance-de, with 1.0% and 1.3% critical errors. In the first red-team round, 2 of 250 adapted payloads change a query, and neither reads data outside the user's grants; both join the held-out set. Both products pilot the model and go live. After early-life watch, 50 labeled live questions per product score 0.88 (0.76 to 0.94) and 0.87 (0.75 to 0.94), consistent with their slices, and both fallback drills work. The board approves, and the status becomes `active`.
-
-**First quarter.** Analytics input p95 rises to 19,000 tokens (severity 3). The owner updates the profile: 1.2 × (19,000 + 400) = 23,280 tokens, still within 32k, so it is a minor change. Finance's review catches a total with the right columns and row count but wrong values. The question and nine variants join the regression slice, and the critical-error rate stays within 2%.
-
 ## Where things live
 
 - Profiles: `onboarding-config/profiles/<product>-<use-case>.yaml`
@@ -508,3 +492,4 @@ Send feedback as an issue or pull request in `red-arg/onboard-llm`. The framewor
 | 0.1 | Oct 29, 2026 | Minimum method for the platform's start |
 | 0.2 | Oct 30, 2026 | Added tiers, risks and controls, roles and monitoring |
 | 0.3 | Oct 31, 2026 | Rewritten as a concise operator guide |
+| 0.4 | Nov 1, 2026 | Folded the risks-and-controls table into the steps and reviews, trimmed the example, aligned owners |
