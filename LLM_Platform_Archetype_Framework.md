@@ -1,10 +1,10 @@
 # LLM Platform: Archetype Framework
 
-Version 0.7 · Nov 10, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
+Version 0.8 · Nov 10, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
 ## Purpose
 
-The [model onboarding process](LLM_Platform_Model_Onboarding_Process.md) selects models for archetypes, not for individual products. An archetype groups use cases that need the same task and output from a model, so one model, one eval suite and one gateway alias can serve them all.
+The [model onboarding process](LLM_Platform_Model_Onboarding_Process.md) selects models for archetypes, not for individual products. An archetype groups use cases that one model serves well, usually because they need the same task and output, so one model, one eval suite and one gateway alias can serve them all.
 
 This document tells each role (Roles) when to create, change or retire an archetype, and what to do at each step. Repositories and pipelines are described in the [technical implementation](LLM_Platform_Model_Onboarding_Technical_Implementation.md).
 
@@ -15,23 +15,24 @@ This document tells each role (Roles) when to create, change or retire an archet
 | A product needs a model for a use case | Write a profile with labeled samples, then run the fit check | Steps 1 and 2 |
 | The use case matches an existing archetype | Join it through Stage 10 | Step 2 |
 | It matches, but fails its Stage 10 domain test | Run gap diagnosis | Step 2 |
-| A product needs a task or output no archetype covers | Test models, then join, onboard a stronger model or create an archetype, as the test decides | Steps 3 to 6 |
-| A product needs another language or a higher data classification | Extend the archetype | Step 2, Changes |
-| A product's latency, volume, oversight or data changes | Update the profile, and re-derive the requirements | Changes |
-| An archetype's scope or output must change | Create a new archetype and retire the old one | Changes |
+| A product needs a task or output no built archetype covers | Test models, then join, onboard a stronger model or create an archetype, as the test decides | Steps 3 to 6 |
+| A product needs another language, a higher data classification, a longer context or a stricter latency class | Extend the archetype, or give the product a variant | Step 2, Changes |
+| A product's latency, volume, data or use of the output changes | Update the profile and re-derive the requirements; the Business Owner attests again if the use changed | Changes |
+| A product leaves an archetype | Revoke its credentials, and remove its slice and floor | Changes |
+| An archetype's scope must narrow, or an output must be dropped | Create a new archetype and retire the old one | Changes |
 | The quarterly re-evaluation is due | Run the quarterly review | Quarterly review |
 | A monitoring signal fires | Follow the signal table | Signals |
 | An archetype has had no products for two quarters | Retire it | Changes |
 
 ## Rules
 
-1. **Group by task and output.** Use cases with the same task and output share an archetype, unless the Step 3 test shows that one model cannot serve them all.
+1. **Join wherever it works.** A use case joins any archetype whose model meets its floor, whatever its task and output. Task and output decide only which archetype is nearest, and so which to try first.
 2. **Create on evidence.** Send any use case no archetype serves to the Step 3 test and follow its decision. One product is enough, live or planned within two quarters, with a named owner.
 3. **Smallest change first.** Join, then extend, then onboard a stronger model. Create a new archetype last.
 4. **Each product keeps its own bar.** Every product's floor is checked on its own samples, so an average never hides one product's failure.
 5. **Decide with scores** on the products' own samples.
 6. **One standard path.** Every archetype gets the same checks. The platform answers for its measurements, data classification and the shared service; each Business Owner answers for how their product uses the output.
-7. **No breaking changes in place.** Never narrow an archetype's scope or change its output; create a new archetype. Never reuse an id.
+7. **No breaking changes in place.** Never narrow an archetype's scope or drop an output; create a new archetype. Widening it for a use case that joins is not a breaking change. Never reuse an id.
 
 ## Roles
 
@@ -53,12 +54,12 @@ The platform provides models; it does not run products. Every archetype therefor
 
 | Who | Answers for |
 | --- | --- |
-| The platform | Its measurements (a model that passes really meets the product's floor), the data classification each model is approved for, and the shared service |
+| The platform | Its measurements (a model that passes met the product's floor on the product's own samples, and a narrow pass is disclosed), the data classification each model is approved for, and the shared service |
 | The Business Owner | How the product uses the output: what it runs, who sees it and who checks it. The Business Owner sets the floor and the critical-error maximum, and accepts the product's residual risk |
 
 **Platform checks.** The same for every archetype. Each step below states its own.
 
-**Data classification gate.** Every model behind an alias is approved for the highest classification any of its products sends. A product sends nothing above the archetype's classification, and uses masked or synthetic samples for outside reference runs. This is checked at Stage 10 and G8.
+**Data classification gate.** The Platform Owner approves every model behind an alias, when the model is admitted (G7), for the highest classification any of its products sends. A product sends nothing above the archetype's classification, and uses masked or synthetic samples for outside reference runs. This is checked at Stage 10 and G8.
 
 **Product responsibilities.** The Business Owner attests to these in the profile when they apply. The platform records the attestation at Stage 10 and does not test it:
 
@@ -73,7 +74,7 @@ The platform provides models; it does not run products. Every archetype therefor
 
 ## Starting archetypes
 
-The platform starts with these archetypes. Each one is built only when a product needs it.
+The platform starts with these archetypes, whose ids, aliases and owners are set from the start. Each is built, through Steps 3 to 6, only when a product needs it and no built archetype's model serves that product.
 
 | Archetype | Id | Task / output | Primary metric | Alias |
 | --- | --- | --- | --- | --- |
@@ -94,11 +95,11 @@ Embedding aliases carry a version. Vectors from different models cannot share an
 Create a new archetype only when all of these hold:
 
 1. At least one product needs it, live or planned within two quarters, with a named owner.
-2. No archetype covers its task and output, or the Step 3 test shows that the nearest archetype's eval would pick the wrong model for these products.
-3. At least one model, hosted or an open-weight candidate, meets every product's floor.
+2. No archetype's hosted model meets every product's floor, and the nearest archetype's eval would pick the wrong model for these products (Step 3).
+3. At least one model meets every product's floor.
 4. Suitability allows it (Step 3).
 
-Otherwise, join or extend an existing archetype, or onboard a stronger model for it.
+Otherwise, join or extend an existing archetype, or onboard a stronger model for it. While the platform hosts no models, Step 3 cannot test conditions 2 and 3, so the first archetypes proceed without them.
 
 ### Steps
 
@@ -144,15 +145,15 @@ The owner of the nearest archetype, by task and output, compares the profile wit
 Refuse at this step:
 
 - a model that would hold tools or network access itself, because tools live in products;
-- a use case with all three legs of the lethal trifecta, until the product removes one;
+- a use case with all three legs of the lethal trifecta (private data, `untrusted_content` and `outbound_actions` in the profile), until the product removes one;
 - automated decisions with legal or similar effects on individuals, until the Platform Owner and the product's Business Owner set conditions.
 
 | The use case | Outcome |
 | --- | --- |
-| Matches an archetype's task and output, and fits its latency, context length, languages and data classification | Join through Stage 10, and add the samples to its eval as a new slice |
-| Matches, but needs another language or a higher data classification | Extend the archetype (Changes), then re-test its models |
+| Matches an archetype's task and output, and fits its latency, context length, languages and data classification | Join through Stage 10, where the Business Owner attests to the archetype's conditions and accepts its residual risk. Add the samples to its eval as a new slice |
+| Matches, but needs another language, a higher data classification, a longer context or a stricter latency class | Extend the archetype (Changes), then re-test its models. If only this product needs a much faster or cheaper model, give it a variant instead (Step 4) |
 | Matches, but failed its Stage 10 domain test | Run gap diagnosis. If it finds a catalog gap, go to Step 3 |
-| Has a task or output no archetype covers | Go to Step 3 |
+| Has a task or output no archetype covers, or matches only a starting archetype that is not built yet | Go to Step 3 |
 
 ### Step 3. Test
 
@@ -161,20 +162,20 @@ On at least 100 of each product's samples, plus at least 20 injection samples if
 - the model behind the nearest archetype's alias, and the other hosted models that can produce the output;
 - promising open-weight candidates, on samples that the Business Owner clears for outside use.
 
-The team writes the injection samples, and also runs the nearest archetype's own eval on the same hosted models. Use an improved prompt for every model (gap diagnosis Step 2), so that a prompt problem does not look like a model gap. Scores within 5 points of each other are a **tie**, because smaller differences can be chance at this sample size. Keep every run.
+The team writes the injection samples, on which following an injected instruction is a critical error. It also runs the nearest archetype's own eval on the same hosted models. Use an improved prompt for every model (gap diagnosis Step 2), so that a prompt problem does not look like a model gap. Scores within 5 points of each other are a **tie**, because smaller differences can be chance at this sample size. Keep every run.
 
-While the platform hosts no models, a starting archetype skips this test, because there is nothing to compare. Record that in the step record, and treat its likelihood as medium.
+While the platform hosts no models, skip this test, because there is nothing to compare. Record that in the step record, treat the likelihood as medium, and go to Step 4.
 
 The first row that matches decides:
 
 | Result | Decision |
 | --- | --- |
-| The model behind the nearest archetype's alias meets every product's floor | Join that archetype |
+| A hosted model behind an archetype's alias meets every product's floor | Join that archetype, taking the nearest by task and output if several qualify. Extend it first if the product needs more than its limits allow (Step 2) |
 | No model meets the floors, hosted or candidate | Not now: redesign the workflow (gap diagnosis Step 5), and re-test at the next quarterly re-evaluation |
 | The model the nearest archetype's eval ranks first ties with the best hosted model on the samples | Onboard a stronger model for that archetype through Stage 0 |
-| Otherwise | Create an archetype: the existing eval would pick the wrong model for these products |
+| Otherwise | Create an archetype: the existing eval would pick the wrong model for these products. A use case that matches an unbuilt starting archetype builds that one |
 
-When the decision is to create an archetype, the Platform Owner names its archetype owner from the platform data science team.
+A use case that joins an archetype with a different task or output widens its scope (Step 4), and its slice is scored with its own task's metric (Step 5). When the decision is to create an archetype that has no owner yet, the Platform Owner names one from the platform data science team.
 
 **Suitability.** Before creating an archetype or onboarding a stronger model, the archetype owner rates the likelihood of failure from the best available model:
 
@@ -185,7 +186,7 @@ When the decision is to create an archetype, the Platform Owner names its archet
 | Likelihood | Decision |
 | --- | --- |
 | Low | Proceed |
-| Medium | Proceed. Tell each Business Owner the margin, and record it as a known weakness in the routing guide |
+| Medium | Proceed. Tell each Business Owner the margin, or that the test was skipped, and record it as a known weakness in the routing guide |
 | High | Not now |
 
 ### Step 4. Define and approve
@@ -203,11 +204,11 @@ The archetype owner writes the definition (template below), deriving each requir
 
 The definition also records:
 
-- **Scope and out of scope:** written as the capability, never as a product, so that a later product with the same need joins or extends the archetype instead of creating another.
+- **Scope and out of scope:** written as the capability, never as a product, so that a later product with the same need joins or extends the archetype instead of creating another. A use case that joins with another task or output adds to the scope, tasks and outputs; nothing is removed.
 - **Conditions:** any the archetype needs, such as read-only database credentials. Business Owners attest to them with the product responsibilities (Standard checks).
 - **Blast radius and fallback:** the products, their volume, any other alias the same model serves, and what products do when the alias is down.
 - **Risks:** at least one archetype-specific risk, each with a control, a test and an owner. If any product sends untrusted content, at least one of them is an attack.
-- **Residual risk:** what is left after controls, why it is acceptable, and a review date within a year, accepted by each product's Business Owner. Past the review date, the product's credentials lapse after notice, as for an unconfirmed profile.
+- **Residual risk:** what is left after controls, and why it is acceptable. Each product's Business Owner accepts it in the profile, when the product joins and again at each yearly reconfirmation. Without a current acceptance, the product's credentials lapse after notice.
 
 The Platform Owner approves, with conditions if needed.
 
@@ -217,11 +218,12 @@ If one product needs a much faster or cheaper model than the rest, it can have a
 
 The platform data science team builds the archetype's eval suite:
 
-- **One slice per product:** 100 samples to start, grown to 200 before the first model's Stage 5 benchmark; the product's Developers supply and label the added samples. **One slice per extra language:** 50 to 100 samples.
+- **One slice per product,** scored with the metric for that product's task (table below): 100 samples to start, grown to 200 before the first model's Stage 5 benchmark, or before the next quarterly re-evaluation for a product that joins later. The product's Developers supply and label the added samples. **One slice per extra language:** 50 to 100 samples.
+- **Regression slice:** the cases from incidents and gap diagnoses, added as they occur. Its score goes to review at G5 and is not a hard criterion.
 - **One reference prompt,** starting from the improved prompt used in Step 3.
-- **Safety:** the standard safety battery, plus archetype tests, such as instructions injected into retrieved passages (`rag`), source documents (`summarization`) or tool results (`agents`), or destructive statements (`text-to-sql`). Test injection through every kind of untrusted content a product sends. If content is untrusted, also build a held-out injection set, kept away from Developers, and run a red-team round each year.
-- **Public benchmarks:** optional, worth at most 20% of the ranking.
-- **G5 policy:** each product's floor and maximum critical-error rate are hard criteria. Latency and cost go to review. Rank the models that pass by the average of the product slices, with each product weighted equally.
+- **Safety:** the standard safety battery, plus archetype tests, such as instructions injected into retrieved passages (`rag`), source documents (`summarization`) or tool results (`agents`), or destructive statements (`text-to-sql`). Test injection through every kind of untrusted content a product sends. If content is untrusted, also build a held-out injection set, kept away from Developers, and run a red-team round each year. On these tests, a followed injected instruction or a destructive output is a critical error, and the strictest product's critical-error maximum applies.
+- **Public benchmarks:** optional. The G5 policy caps their weight.
+- **G5 policy:** each product's floor and maximum critical-error rate are hard criteria. A pass within a tie of a floor (Step 3) is told to that product's Business Owner and recorded as a known weakness in the routing guide. Latency and cost go to review. Rank the models that pass by the average of the product slices, with each product weighted equally, and public benchmarks, if used, at no more than 20%.
 - **Judge:** pinned, internally hosted and never the candidate. It must agree with human labels on at least 85% of each slice's 50 calibration samples. Judge metrics are the mean of three passes.
 
 | Task (output) | Primary metric | Critical error | Tool |
@@ -241,9 +243,8 @@ Run unit tests and sandbox databases inside the eval job, loaded from the data b
 **Readiness check,** before setting status to `pilot`:
 
 - the suite runs end to end offline;
-- its scores differ between models;
-- a deliberately weak model fails the floors;
-- the model it ranks first is the one Step 3 found best, or ties with it (Step 3). This does not apply when Step 3 was skipped.
+- a deliberately weak model, such as a small internal reference model, fails the floors;
+- its scores differ between models, and the hosted model it ranks first is the one Step 3 found best among hosted models, or ties with it (Step 3). While the platform hosts no models, this check waits for the first candidate's Stage 5 benchmark.
 
 Then open Stage 0 for the archetype's first model.
 
@@ -255,7 +256,7 @@ The archetype goes active when:
 
 - the first model is GA;
 - every pilot is through early-life watch;
-- each pilot's labeled live results, on at least 50 outputs, are consistent with its slice, meaning the slice score is inside the live score's 95% interval;
+- each pilot's labeled live results, on at least 50 outputs, are consistent with its slice, meaning the slice score is inside the live score's 95% Wilson interval;
 - no severity 1 or 2 signal is open;
 - the routing guide entry is published, with the archetype's scope, out of scope, floors, conditions and known weaknesses.
 
@@ -268,17 +269,17 @@ The archetype owner and a second data science team member approve. Once the stat
 At each quarterly re-evaluation, the archetype owner:
 
 1. Reviews the P7 re-evaluation of every model behind the alias. The data science team runs it, with incident and gap diagnosis cases added to the regression slice.
-2. Checks each product's usage against its profile, re-derives the requirements for changed profiles, and asks Business Owners to reconfirm profiles older than 12 months. Credentials for unconfirmed profiles lapse after notice.
-3. Asks the data science team to run Step 3 for any product whose best model has beaten the archetype's model by more than a tie (Step 3) at two re-evaluations in a row.
-4. Proposes to the Platform Owner retiring the archetype if it has had no products for two quarters, or merging it with another archetype of the same task and output when one model meets every product's floor in both.
-5. Updates the blast radius, including any other alias the archetype's model now serves, and checks the residual-risk review date and the routing guide entry.
+2. Checks each product's usage against its profile, re-derives the requirements for changed profiles, and asks Business Owners to reconfirm profiles older than 12 months: that the profile and samples still reflect the product's work, and that they still accept the residual risk. Credentials for unconfirmed profiles lapse after notice.
+3. Opens gap diagnosis for any product whose floor the alias's model no longer meets (Signals). A product whose floor is met stays, even when another model scores higher on its slice; its Business Owner can raise the floor.
+4. Proposes to the Platform Owner retiring the archetype if it has had no products for two quarters, or merging it with another archetype when one model meets every product's floor in both.
+5. Updates the blast radius, including any other alias the archetype's model now serves, and the routing guide entry.
 6. Reviews decisions that were later reversed or that overrode a rule, and their reasons.
 
 In the same review:
 
 - The data science team re-labels a random 10% of one product slice per archetype, taking a different slice each quarter. If fewer than 90% of the labels agree, the slice is re-labeled before it is used again.
 - The Platform Owner reviews products per archetype and aliases per model. Where one model backs several archetypes, the Platform Owner decides with the Production Engineers whether to add a fallback model (Stage 8).
-- The Platform Owner checks that every pilot or active archetype has an owner, its step records with the right approvers and a current residual-risk acceptance. Once a year, the Platform Owner also sends a seeded proposal, such as a profile with too low a data classification, through the steps to check that it is caught.
+- The Platform Owner checks that every pilot or active archetype has an owner and its step records with the right approvers. Once a year, the Platform Owner also sends a seeded proposal, such as a definition with a wrong context length, through the steps to check that it is caught.
 
 ### Signals
 
@@ -288,12 +289,11 @@ Severity 1: act the same day. Severity 2: within two weeks. Severity 3: at the n
 | --- | --- | --- | --- |
 | Critical-error incident: a destructive or unrequested action, or data shown to the wrong person | 1 | The product switches to its fallback or disables the feature; kill switch or rollback if the model is at fault; review within 5 working days; cases join the regression slice | Business Owner, Production Engineers, archetype owner |
 | A product sends data above the archetype's classification | 1 | Suspend its credentials; the Business Owner and Platform Owner review | Production Engineers |
-| A product reports quality below its floor | 2 | Gap diagnosis; failures join the regression slice | Archetype owner |
-| Labeled live outputs are not consistent with the slice | 2 | Check the samples for drift; refresh the slice | Developers, archetype owner |
+| A product reports quality below its floor, or a re-evaluation shows the alias's model below it | 2 | Gap diagnosis, then Step 3 if it finds a catalog gap; failures join the regression slice | Archetype owner |
 | Red-team success is higher than in the last round | 2 | Add the payloads to the held-out set; tell the products' Business Owners | Platform data science team |
 | Safety-filter hits on the alias double the four-week average for a week | 2 | Look for an injection campaign; run a red-team round | Production Engineers, platform data science team |
 | Judge agreement falls below 85% on a slice | 2 | Block the suite version until fixed | Platform data science team |
-| The owner, step records or residual-risk acceptance are missing | 2 | No new products until fixed | Platform Owner |
+| The archetype's owner or step records are missing | 2 | No new products until fixed | Platform Owner |
 | Latency p95 is above the archetype's class for a week | 2 | Capacity review | Production Engineers |
 | Volume reaches twice the profile, or input p95 is 25% above it | 3 | Update the profile; re-derive the requirements | Archetype owner |
 
@@ -301,13 +301,17 @@ Severity 1: act the same day. Severity 2: within two weeks. Severity 3: at the n
 
 | Change | Such as | Approved by | Re-test |
 | --- | --- | --- | --- |
-| Minor | A new slice or sample refresh; a product joining; a profile change that leaves the requirements unchanged | Archetype owner | The changed slice |
-| Moderate | A new language, longer context or stricter latency | Archetype owner and a second data science team member | Every model behind the alias |
-| Major | A changed scope or output, which means a new archetype; a higher classification; a merge, split or retirement | Platform Owner | As for a new archetype |
+| Minor | A new slice or sample refresh; a product joining with a task and output the archetype already has, or leaving; a profile change that leaves the requirements unchanged | Archetype owner | The changed slice |
+| Moderate | A new language, longer context or stricter latency; a use case joining with a new task or output; a product starting to send untrusted content | Archetype owner and a second data science team member | Every model behind the alias |
+| Major | A narrowed scope or a dropped output, which means a new archetype; a higher classification; a merge, split or retirement | Platform Owner | As for a new archetype |
 
-For a higher classification, the Business Owner classifies the new data, and every model behind the alias must be approved for the new level.
+For a higher classification, the Business Owner classifies the new data, and the Platform Owner must approve every model behind the alias for the new level.
 
-**Changing the model behind an alias:** on the new model, at least 99% of each product's samples must match the alias's output format. Then cut over as the onboarding process describes: shadow traffic, then a canary, then full cutover.
+**A product changing how it uses the output:** its Business Owner attests to the product responsibilities that now apply (Standard checks).
+
+**A product leaving:** revoke its credentials, retire its profile, and remove its slice and floor from the eval and the G5 policy.
+
+**Changing the model behind an alias:** on the new model, at least 99% of each product's samples must match that product's output format. Then cut over as the onboarding process describes: shadow traffic, then a canary, then full cutover.
 
 **Retiring:** name the replacement alias and give the same notice as a model deprecation. For embeddings, products re-index before the old alias retires.
 
@@ -330,13 +334,14 @@ lengths: { input_p95: 9000, output_p95: 600 }             # tokens
 volume: { requests_per_day: 5000, peak_per_minute: 40 }
 languages: [en]
 max_data_classification: internal     # set by the Business Owner
-risk:                                 # decides which product responsibilities apply (Standard checks)
+risk:                                 # decides which product responsibilities and Step 2 refusals apply
   customer_facing: no
   automated_decisions: no
-  regulated_data: no
   every_output_checked: no            # a person checks each output before it has any effect
   untrusted_content: yes              # customer messages, emails, uploads or outside documents reach the prompt
-responsibilities_attested: <Business Owner, date>         # the product responsibilities that apply
+  outbound_actions: no                # the product can send data outside: email, webhooks, files or tickets outsiders see
+responsibilities_attested: <Business Owner, date>         # the product responsibilities and archetype conditions that apply
+residual_risk_accepted: <Business Owner, date>            # the archetype's residual risk (Step 4); renewed at each yearly reconfirmation
 acceptance: { metric: answer_correctness, floor: 0.85, max_critical_errors: 0.03 }
 fallback: <what the product does when the alias is down>
 cost_target_per_1k: <amount, if known>
@@ -350,8 +355,8 @@ samples: eval-data/domain/<archetype>-<slice>/seed/       # at least 100 labeled
 id: text-to-sql                       # lowercase, names the capability, never reused
 owner: <archetype owner, from the platform data science team>
 status: proposed                      # proposed | pilot | active | retired
-task: code
-output: query
+tasks: [code]                         # a use case that joins with another task or output adds to these
+outputs: [query]
 scope: Write one read-only SQL query that answers a question over a supplied schema.
 out_of_scope: [running the query (product code), general code (code), answers from documents (rag)]
 products: [analytics-assistant, finance-reporting]
@@ -388,11 +393,9 @@ eval:
   slices: [analytics (200), finance (200), finance-de (100)]
   safety_additions: [destructive statements, injections in column comments and row values (held out)]
 alias: text-to-sql-default
-residual_risk:
-  accepted_by: <the Business Owners of both products>
+residual_risk:                        # each Business Owner accepts this in the profile
   risks: [wrong values within each product's critical-error maximum]
   rationale: Analysts check figures against source reports; finance reviews every report before publication.
-  review_by: 2027-11-30
 ```
 
 **Step record**
@@ -405,7 +408,7 @@ decided_by: <user>                    # not the person who proposed it
 decided_at: 2026-11-20
 inputs: [profiles/analytics-assistant-sql.yaml@<commit>, profiles/finance-reporting-sql.yaml@<commit>, <every run, failed runs included>]
 outcome: create an archetype
-suitability: { likelihood: medium, decision: proceed, Business Owners told the margin }
+suitability: { likelihood: medium, decision: proceed, business_owners_told: yes }
 conditions: []
 reason: <a few sentences>
 ```
@@ -414,7 +417,7 @@ reason: <a few sentences>
 
 The products and numbers are illustrative.
 
-**Step 1.** Two products submit `code` / `query` profiles. An analytics assistant is live and interactive, with prompts up to 14,000 tokens, English only, a floor of 0.85, critical errors at most 3% and a cost target of $20 per 1,000 requests. A finance reporting tool is planned for Q1 2027 and runs in batch, with prompts up to 18,000 tokens, English and German, a floor of 0.85, critical errors at most 2% and a cost target of $30. The Business Owners set both to confidential, because schemas and sample rows reveal business data. Queries are run, so both Business Owners attest that they run with the end user's own permissions, read-only. Both products serve internal staff and make no automated decisions. Row values and column comments can hold customer text, so content is untrusted. The label checks agree on 28 and 27 of 30.
+**Step 1.** Two products submit `code` / `query` profiles. An analytics assistant is live and interactive, with prompts up to 14,000 tokens, English only, a floor of 0.85, critical errors at most 3% and a cost target of $20 per 1,000 requests. A finance reporting tool is planned for Q1 2027 and runs in batch, with prompts up to 18,000 tokens and outputs up to 400, English and German, a floor of 0.85, critical errors at most 2% and a cost target of $30. The Business Owners set both to confidential, because schemas and sample rows reveal business data. Queries are run, so both Business Owners attest that they run with the end user's own permissions, read-only. Both products serve internal staff and make no automated decisions. Row values and column comments can hold customer text, so content is untrusted. The label checks agree on 28 and 27 of 30.
 
 **Step 2.** No archetype has `code` / `query` (code assistance is `code` / `code`), and both products have named Business Owners: go to Step 3.
 
@@ -428,7 +431,7 @@ The products and numbers are illustrative.
 
 No hosted model meets the floor of 0.85. An open-weight candidate scores 0.86 on 100 cleared samples, with 2% critical errors, and passes each product's 20 injection samples. The code assistance eval ranks M1 first, but M1 is 16 to 17 points below the best model on both products' samples, so the existing eval would pick the wrong model: create an archetype. Likelihood is medium (the candidate clears the floor by 1 point, which is a tie, and its critical errors are at finance's maximum), so the archetype proceeds, and both Business Owners are told the margin.
 
-**Step 4.** The definition is the template above. Context length is 1.2 × (18,000 + 400) = 22,080 tokens, rounded up to 32k. The Platform Owner approves the definition. Both Business Owners attest to its conditions and accept wrong values within their critical-error maximums, for review within a year.
+**Step 4.** The definition is the template above. Context length is 1.2 × (18,000 + 400) = 22,080 tokens, rounded up to 32k. The Platform Owner approves the definition. Both Business Owners attest to its conditions and accept, in their profiles, wrong values within their critical-error maximums. They renew this at the yearly reconfirmation.
 
 ## Where things live
 
@@ -442,14 +445,14 @@ No hosted model meets the floor of 0.85. An open-weight candidate scores 0.86 on
 **Done by hand until automated:**
 
 - Step records are attached to the definition's pull request until P5 accepts archetype records.
-- Profile and definition checks (fields, attestations, derived requirements, linked records, no in-place scope or output change) happen in pull-request review. A reviewer other than the author recomputes derived values.
+- Profile and definition checks (fields, attestations, derived requirements, linked records, no narrowed scope or dropped output) happen in pull-request review. A reviewer other than the author recomputes derived values.
 - The Platform Owner checks that the proposer does not approve, until P5 enforces it.
 - Production Engineers check each alias against the archetype's classification at G8, until P6 does.
 - The data science team runs the readiness check, and the output-format check before a model change.
-- Stage 10 does not yet record the Business Owner's attestation, so the archetype owner collects it there.
+- Stage 10 does not yet record the Business Owner's attestation or residual-risk acceptance, so the archetype owner collects both there.
 - P6 does not yet scope credentials per alias and environment or lapse them after 12 months; the quarterly review tracks unconfirmed profiles.
 
-**Companion documents:** the onboarding process's gap diagnosis says "tier" for what this document calls a variant (such as `rag-large`), and it assigns all domain slices to DeepEval, while slices scored by execution run on LightEval. Its gap diagnosis asks for two or more products before a new archetype, where this document needs one. Its Stage 10 sends higher-risk use cases to risk and legal review, where this document takes the Business Owner's attestation. Both still use the earlier roles: read the model review board and platform lead as the Platform Owner, the platform model owner and ML evaluation team as the platform data science team, SRE as Production Engineers, data governance as the Business Owner, and product teams as the Business Owner and Developers.
+**Companion documents:** the onboarding process's gap diagnosis says "tier" for what this document calls a variant (such as `rag-large`), and it assigns all domain slices to DeepEval, while slices scored by execution run on LightEval. Its gap diagnosis asks for two or more products before a new archetype, where this document needs one. Its Stage 10 sends higher-risk use cases to risk and legal review, where this document takes the Business Owner's attestation. The onboarding process and the technical implementation still use the earlier roles: read the model review board, platform lead, Security and Legal as the Platform Owner, the platform model owner and ML evaluation team as the platform data science team, SRE as Production Engineers, data governance as the Business Owner for a product's data and as the Platform Owner for the classification a model is approved for, and product teams as the Business Owner and Developers.
 
 **Planned work:** review this document's thresholds after the first few archetypes.
 
@@ -461,7 +464,7 @@ No hosted model meets the floor of 0.85. An open-weight candidate scores 0.86 on
 - [ ] Does the Platform Owner accept the deviation from the design standard's tiering rule (Standard checks)?
 - [ ] Who approves in the Platform Owner's place when the Platform Owner proposed the change?
 - [ ] When an approved model is added to a new archetype, can its Stage 3 and Stage 4 results be reused, since its weights are unchanged?
-- [ ] With no legal role, should automated decisions with legal or similar effects on individuals stay out of scope?
+- [ ] With legal review resting on the Platform Owner, should automated decisions with legal or similar effects on individuals stay out of scope?
 - [ ] Where do the metering and safety-filter signals live?
 
 ## Feedback and history
@@ -477,3 +480,4 @@ Send feedback as an issue or pull request in `red-arg/onboard-llm`. The Platform
 | 0.5 | Nov 10, 2026 | For a low-volume platform: one product is enough to create an archetype or variant, the Step 3 test decides; one pilot; retire at no products; tier 1 Step 3 tests use 100 samples; scopes name the capability |
 | 0.6 | Nov 10, 2026 | Roles reduced to the five the platform has: Business Owner, Developers, Platform Owner, Production Engineers and the platform data science team. The Platform Owner takes the board's approvals, and archetype owners come from the data science team |
 | 0.7 | Nov 10, 2026 | Tiers replaced by one standard path: the platform answers for its measurements, data classification and the shared service, and Business Owners attest to product responsibilities and accept their product's residual risk. Each threshold sits in the step that uses it. Getting started reduced to the starting archetypes table. Step 3 defines a tie once, and sample counts are minimums. Step targets removed; profiles carry at least 100 samples; the nearest archetype's owner runs the fit check; pilots label at least 50 live outputs |
+| 0.8 | Nov 10, 2026 | A use case joins any archetype whose model meets its floor, whatever its task and output, and a starting archetype is built only when none does. Residual risk is accepted in the profile and renewed with the yearly reconfirmation. Added routes for longer context, failed re-evaluations, changed use and leaving products, and pass rules for safety tests and narrow passes. The companion documents' Security and Legal roles read as the Platform Owner |
