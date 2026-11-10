@@ -80,7 +80,6 @@ Nexus rules:
 - **Disable redeploy** on every hosted repository, so a path once written cannot be overwritten. New content always goes to a new path.
 - **Delete privileges** on `models-approved`, `eval-data` and `evidence` are held by no person or pipeline in day-to-day roles. Retention and retirement deletes run through a reviewed pipeline that records what it removed.
 - **Proxy read access** is granted only to the P0 and P2 service accounts. Eval agents and serving environments have no read access to any proxy repository.
-- **Content selectors** restrict read access to domain test sets by data classification.
 - **Gated upstream content:** `hf-proxy` authenticates to Hugging Face with a platform service account. That account accepts a gated model's or dataset's terms only after Legal approves them, and the approval is recorded in the data inventory.
 - **Nexus audit logging** is enabled and exported to the central log store, so repository and privilege changes are themselves traceable.
 - **Blob store backups** cover `models-approved`, `eval-data` and `evidence`.
@@ -194,7 +193,7 @@ Examples below are typical; the authoritative list for a pinned tool version and
 | DeepEval (Stage 5) | Our domain test sets; the judge model. The metrics themselves need no public datasets | `eval-data/domain/` (uploaded through P5); internal judge model | Do not use DeepEval's built-in public benchmarks: LightEval covers them, and a second copy of the same datasets is a second thing to pin and audit. If DeepEval's synthesizer is used to draft test cases, its embedding model is an internal model too |
 | MTEB (Stage 5) | Corpus, queries and relevance judgments for each selected task, mostly from the `mteb` organization on Hugging Face | `hf-proxy` | Each MTEB task names its dataset revision in its metadata; the lock records it. Retrieval corpora can be large, so select tasks by the archetype's languages and task types. Embedding models that need custom code follow the Stage 3 custom-code review |
 | GuideLLM (Stage 5, 9) | The candidate's tokenizer, to size prompts in tokens; a prompt source | `models-approved`; built-in synthetic data or our own prompt sets | Prefer synthetic prompts sized per archetype, or prompts shaped like our traffic, over public chat datasets |
-| Safety battery (Stage 5) | Memorization and canary sets; PII detection models if used (for example a spaCy model for Presidio) | `eval-data/domain/`; `web-raw-proxy-<host>` or `pypi-proxy` | Owned by data governance; canary sets are classified data |
+| Safety battery (Stage 5) | Memorization and canary sets; PII detection models if used (for example a spaCy model for Presidio) | `eval-data/domain/`; `web-raw-proxy-<host>` or `pypi-proxy` | Owned by data governance |
 
 ### Discovery run
 
@@ -214,7 +213,6 @@ A tool version change can add a new download, so the inventory is discovered, no
 | No pickle-based files in tool models or datasets (`.bin`, `.pt`, `.pth`, `.pkl`, `.ckpt`, `.joblib`); safetensors or Parquet only, unless Security converts and verifies them | The same rule Stage 3 applies to candidate weights |
 | ModelScan runs over every tool model and every file with a model-like extension in a dataset | A detector model is executed like any other model |
 | Each entry has a license, and gated entries have Legal's recorded approval | Public benchmarks have their own terms, some non-commercial or research-only |
-| Each entry has a data classification; public benchmarks are public, domain sets carry their owner's classification | Decides who can read it in `eval-data` |
 | Internal models used by tools (judge, attacker, embedding for synthesis) are registered models that passed at least G2, G3 and G4 | Their outputs decide gate verdicts |
 
 ### Data inventory and lock
@@ -228,7 +226,6 @@ A tool version change can add a new download, so the inventory is discovered, no
   used_by: [lighteval]
   license: MIT
   gated: false
-  classification: public
   approved_by: { legal: <user>, security: <user>, at: 2026-10-30 }
 - id: hf-model:<org>/<toxicity-detector>
   revision: <commit hash>
@@ -237,7 +234,6 @@ A tool version change can add a new download, so the inventory is discovered, no
   modelscan: evidence/tool-intake/<run-id>/
   license: Apache-2.0
   gated: false
-  classification: public
   approved_by: { security: <user>, at: 2026-10-30 }
 ```
 
@@ -458,7 +454,6 @@ artifact: models-approved/<publisher>/<model>/<digest>/
 status: Approved
 owner: <platform model owner>
 archetypes: [rag]
-max_data_classification: internal
 gates:
   G3: { decision: approve, by: <user>, at: 2026-10-30, evidence: evidence/sha256:.../stage3-security/stage3-20261030T101200-4790/ }
   G4: { decision: approve, by: <user>, at: 2026-10-31, evidence: evidence/sha256:.../stage4-garak/stage4-20261031T083000-4801/ }
