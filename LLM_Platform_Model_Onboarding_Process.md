@@ -30,7 +30,7 @@ The platform model owner drives each onboarding end to end. The model review boa
 | ML evaluation team | Maintains the archetype eval suites and safety battery; supports the pilot product; runs safety, data-risk and performance tests; co-signs the eval report. |
 | Security | Supply-chain vetting, artifact scanning, isolated load test, AI bill of materials sign-off. |
 | Legal | License classification, obligations that flow down to products, export-control check. |
-| Data governance / privacy | Sets the maximum data classification the model may process; reviews memorization and PII test results. |
+| Data governance / privacy | Reviews memorization and PII test results. |
 | Platform SRE / infrastructure | Capacity, serving configuration, observability, runbook, on-call. |
 | Model review board | Approves or rejects admission, replacement and retirement. Members: platform lead (chair), security, legal, data governance, risk. |
 | Product teams | Propose archetype gaps; as pilot product, run the Stage 6 capability evaluation and co-sign G6; adopt models in dev and get use cases approved before go-live; sign off their own go-live. On the review board: Consulted, not approvers. |
@@ -40,7 +40,7 @@ The platform model owner drives each onboarding end to end. The model review boa
 These must exist before the first model is onboarded. Without them, every evaluation is ad hoc and models cannot be compared.
 
 1. **Archetype catalog.** A short, stable list of the use-case archetypes the platform serves, built from product teams' roadmaps. Starting point: Q&A / RAG, summarization, extraction and classification, code assistance, agents and tool use, embeddings and search, multilingual. Archetypes are created, changed and retired through the [archetype framework](LLM_Platform_Archetype_Framework.md).
-2. **Requirements per archetype.** Minimum quality bar, latency target, context length, languages, maximum data classification, and target cost per request.
+2. **Requirements per archetype.** Minimum quality bar, latency target, context length, languages, and target cost per request.
 3. **Eval suite per archetype.** Representative tasks on content like the platform's real workload: public benchmarks plus domain samples contributed by product teams (or synthetic data until those exist). Versioned, so scores stay comparable across models.
 4. **Standard safety battery.** Jailbreak and prompt-injection resistance, harmful-content refusal, bias probes, memorization and PII leakage tests. Run on every model regardless of archetype.
 5. **License policy.** Which license classes the platform accepts: commercial use allowed, internal use only, or not acceptable.
@@ -124,7 +124,7 @@ The harness is built on four open-source tools, each covering a different part o
 
 A pilot product evaluates the model on its real use case, so selection rests on actual work rather than benchmarks alone. Garak, benchmark, safety and data-risk results come from Stages 4 and 5.
 
-- **Choose the pilot:** the platform model owner picks one product per target archetype, usually the team that reported the gap. The pilot commits a named owner, representative data within a classification limit agreed with data governance, and success criteria set before testing starts.
+- **Choose the pilot:** the platform model owner picks one product per target archetype, usually the team that reported the gap. The pilot commits a named owner, representative data, and success criteria set before testing starts.
 - **Run outside production:** the pilot integrates the registry copy in staging through a pilot-only gateway alias. No production traffic or end users until Go Live.
 - **Capability, run by the pilot:** task success against the agreed criteria, compared with the incumbent on the same tasks.
 - **Operational, run by the platform:** latency, throughput, memory and cost per request on target hardware, using the pilot's traffic pattern.
@@ -147,7 +147,7 @@ For a board-approved model, the platform model owner decides how it enters the c
 - **Add as fallback:** for resilience or a specialized need within an archetype.
 - **Reject:** no meaningful gain over the current catalog.
 
-The owner drafts the model card: approved archetypes, maximum data classification, license class and obligations, eval results, known weaknesses.
+The owner drafts the model card: approved archetypes, license class and obligations, eval results, known weaknesses.
 
 ### Stage 9: Production readiness (Gate G8)
 
@@ -165,9 +165,9 @@ Runs in the dev environment, which mirrors production: same hardware class, serv
 This is the second approval layer, owned by each product team. It runs in the dev environment; the product reaches production only at Go Live.
 
 - A product requests access to an archetype alias, describing its use case and the data it will send.
-- The platform checks the use case against the model card (archetype, data classification, license obligations).
+- The platform checks the use case against the model card (archetype, license obligations).
 - Higher-risk use cases, such as customer-facing, regulated data or automated decisions, go to risk and legal review.
-- The product integrates through the dev gateway alias, using data within the classification agreed with data governance.
+- The product integrates through the dev gateway alias.
 - The product passes the trifecta check (see Lethal trifecta and network isolation) and runs its own application-level evaluation in dev.
 - **Use-case approval:** the platform records the approved use case. Production credentials are issued at Go Live, not before.
 
@@ -303,7 +303,7 @@ Every model version carries exactly one status in the registry, and only Dev and
 | Proposed | Registered at intake, under review | Nobody |
 | Rejected | Failed a gate; reason recorded | Nobody |
 | Approved | Passed the review board, not yet serving | Nobody |
-| Dev | Serving in the dev environment after G8 | Product teams adopting it in dev, within the agreed data classification |
+| Dev | Serving in the dev environment after G8 | Product teams adopting it in dev |
 | GA | Serving with SLA and support | Products with an approved use case |
 | Deprecated | Still serving, sunset date announced | Existing products only, while they migrate |
 | Retired | Removed from serving; artifacts archived | Nobody |
@@ -315,7 +315,7 @@ Every model version carries exactly one status in the registry, and only Dev and
 - Watch upstream for vulnerabilities, license changes and end of support. A critical vulnerability can trigger the kill switch.
 - Give products a fixed notice period before retirement, with the replacement alias named in the deprecation notice.
 
-**Changes that need a new onboarding:** a new major version, a fine-tune, a new quantized variant, or a request to extend the model to a new archetype or a higher data classification.
+**Changes that need a new onboarding:** a new major version, a fine-tune, a new quantized variant, or a request to extend the model to a new archetype.
 
 ## Records produced
 
