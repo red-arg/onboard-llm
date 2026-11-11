@@ -365,7 +365,7 @@ Stages 2, 6, 7 and 8, and the use-case approval in Stage 10, produce documents r
 
 - **Dev (Stage 9):** a pull request to `gateway-aliases` maps the alias to the model digest for dev. The pipeline checks that the registry status is **Approved**, deploys from `models-approved`, verifies the digest at serving start, runs the readiness checks including a GuideLLM load test at expected peak, and pauses for G8. On approval, status becomes **Dev**.
 - **Serving image:** both environments pull the serving image from `onboarding-base` by digest and verify its signature before starting.
-- **Production (Stage 11):** the pipeline promotes the exact dev deployment. It refuses to run if the model digest, serving image digest or serving configuration hash differ from what G8 approved. It runs production smoke tests and kill-switch and rollback checks, pauses for the go-live sign-off, then sets status to **GA** on a model's first go-live.
+- **Production (Stage 11):** the pipeline promotes the exact dev deployment. It refuses to run if the model digest, serving image digest or serving configuration hash differ from what G8 approved. It runs production smoke tests and rollback checks, pauses for the go-live sign-off, then sets status to **GA** on a model's first go-live.
 - Production credentials for a product are issued only by this pipeline, and only for a use case with an approval record from Stage 10.
 
 ## Results, policy and verdicts
