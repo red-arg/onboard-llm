@@ -1,6 +1,6 @@
 # LLM Platform: Archetype Framework
 
-Version 0.11 · Nov 10, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
+Version 0.12 · Nov 11, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
 ## Purpose
 
@@ -12,7 +12,7 @@ The platform serves models through archetypes. An archetype is a capability the 
 | Decides | Which model each version serves, and when a new archetype is needed | Whether a version is good enough for its use |
 | When a model changes | Releases a new version beside the old one, with notice | Re-runs its acceptance test and moves before the end date |
 
-Every archetype gets the same checks and every version the same release, whatever products do with the output. This deviates from the [design standard](Framework_Design_Standard_for_AI_Software_and_Product.md), which tiers obligations by risk: obligations that vary with product risk belong to the Business Owner.
+Every archetype gets the same checks and every version the same release, whatever products do with the output. This deviates from the [design standard](Framework_Design_Standard_for_AI_Software_and_Product.md), which tiers obligations by risk: obligations that vary with product risk belong to the Business Owner. It also deviates from the standard's manual fallback: an archetype's fallback is another model (Versions), not a manual process.
 
 Repositories, pipelines and tooling are in the [technical implementation](LLM_Platform_Model_Onboarding_Technical_Implementation.md).
 
@@ -21,10 +21,10 @@ Repositories, pipelines and tooling are in the [technical implementation](LLM_Pl
 | Role | Responsibilities |
 | --- | --- |
 | Business Owner (owns the product) | Approves the product's profiles; signs each acceptance result; donates samples to reference sets; attests to the archetype's conditions and accepts its residual risk; reconfirms profiles yearly |
-| Developers (build the product) | Write profiles and label the acceptance set; run the acceptance test on joining and on each new version; move the product within the notice period; switch to the fallback and report incidents; label live outputs during a pilot |
+| Developers (build the product) | Write profiles and label the acceptance set; run the acceptance test on joining and on each new version; move the product within the notice period, and to the fallback when its version is stopped; report incidents; label live outputs during a pilot |
 | Platform Owner | Approves new archetypes, variants, major changes, retirements and end-date extensions; names archetype owners; audits the catalog and its records each quarter; keeps this document current |
 | Platform data science team | Owns the reference evals and the acceptance harness; runs capability tests, re-evaluations, label audits and red-team rounds |
-| Production Engineers (platform engineers) | Run the gateway and the versioned aliases: credentials, metering, alerts, kill switch, and capacity for two versions through each notice period |
+| Production Engineers (platform engineers) | Run the gateway and the versioned aliases: credentials, metering, alerts, kill switch, serving the fallback when a version is stopped, and capacity for two versions through each notice period |
 
 Each archetype has an **archetype owner**, a named member of the platform data science team, who runs fit checks, writes the definition, proposes pilots, sends release notices, runs the quarterly review and acts on signals.
 
@@ -46,6 +46,12 @@ Every alias names one version of one archetype: `<id>-v<n>`, such as `rag-v2`. A
 - **At most two versions serve in production** per archetype: one current and one deprecated.
 - **Embeddings:** vectors from different versions cannot share an index, so products re-index within the notice period.
 - **No reuse.** Ids and version numbers are never reused.
+
+**Fallback.** Every archetype names one fallback in its definition: the model its products move to when the kill switch stops the current version.
+
+- **The previous version,** if the archetype has one and it was not removed because the model had to go. Its artifacts stay in the registry after it retires, so it can be served again under its own alias.
+- **Otherwise a comparable model:** one the archetype owner expects, from published results and any scores the platform holds, to perform equal or close to the current version on the archetype's task and output.
+- **Test a comparable model before it is needed,** by taking it through Stages 0 to 5 under the G5 policy. This is recommended, not required: an untested model runs those stages when it is called on.
 
 ## Tasks and starting archetypes
 
@@ -154,7 +160,7 @@ The archetype owner writes the definition (Templates):
 - **Offer:** what every version provides (table below). It changes only through Changes.
 - **Reference floor and critical-error maximum:** the draft floor and maximum from Step 3.
 - **Conditions:** any the archetype needs from its products, such as read-only database credentials.
-- **Blast radius and fallback:** the products on each version, their volume, any other alias the same model serves, and what products do when a version is down.
+- **Blast radius and fallback:** the products on each version, their volume, any other alias the same model serves, and the fallback (Versions), with whether it has been tested.
 - **Risks:** at least one archetype-specific risk, each with a control, a test and an owner. At least one is an attack.
 - **Residual risk:** what is left after controls, and why it is acceptable.
 
@@ -199,7 +205,7 @@ The archetype goes active when:
 - the pilot is through early-life watch;
 - the pilot's acceptance score is inside the 95% Wilson interval of its live score, on at least 50 labeled live outputs;
 - no severity 1 or 2 signal is open;
-- the routing guide entry is published: scope, out of scope, offer, conditions, known weaknesses and version 1's reference scores.
+- the routing guide entry is published: scope, out of scope, offer, conditions, known weaknesses, the fallback and version 1's reference scores.
 
 The archetype owner and a second data science team member approve. Any product can then join through Stage 10.
 
@@ -217,9 +223,9 @@ Release a new version only when a candidate:
 | --- | --- | --- |
 | 1. Select | Platform data science team | The candidate passes Stages 0 to 5 under the G5 policy |
 | 2. Pilot | Archetype owner; one product | One product runs its acceptance test on the candidate at Stage 6. The Platform Owner approves the model at G7 |
-| 3. Release | Production Engineers; archetype owner | The Production Engineers confirm capacity for both versions. At GA, `<id>-v<n+1>` becomes `current` and the old version `deprecated`, with its end date 90 days ahead. The archetype owner sends the release notice (Templates) to every Business Owner on the archetype |
+| 3. Release | Production Engineers; archetype owner | The Production Engineers confirm capacity for both versions. At GA, `<id>-v<n+1>` becomes `current` and the old version `deprecated`, with its end date 90 days ahead. The old version becomes the archetype's fallback (Versions). The archetype owner sends the release notice (Templates) to every Business Owner on the archetype |
 | 4. Move | Developers; Business Owner signs | Each product re-runs its acceptance test on the new version in dev, adjusts its prompts, and switches at Stage 11 |
-| 5. Retire | Production Engineers | The old version retires on its end date, or earlier once no product calls it. Products that have not moved run on their fallback |
+| 5. Retire | Production Engineers | The old version retires on its end date, or earlier once no product calls it, and stays the fallback. Products that have not moved are no longer served |
 
 **A product that cannot move.** The archetype owner runs gap diagnosis with it inside the notice period.
 
@@ -227,9 +233,14 @@ Release a new version only when a candidate:
 | --- | --- |
 | Prompt problem | The product adopts the improved prompt and moves |
 | Catalog gap | The failing cases the Business Owner donates join the regression slice, and Stage 0 opens for a model that passes them. The Platform Owner extends the old version's end date once, by one notice period |
-| Beyond current models | The product redesigns its workflow (gap diagnosis Step 5) or runs on its fallback |
+| Beyond current models | The product redesigns its workflow (gap diagnosis Step 5) |
 
-**Forced replacement.** When the kill switch stops a version, its products run on their fallback. The replacement is released as the next version on the onboarding process's fast track.
+**Forced replacement.** When the kill switch stops the current version, the Production Engineers serve the archetype's fallback. Each product re-runs its acceptance test on it and moves.
+
+- **A previous version** returns under its own alias as `current`, and any end date it had is withdrawn.
+- **A comparable model** is released as the next version. One tested in advance starts at the pilot (step 2); an untested one starts at Stage 0.
+
+The archetype owner then names a new fallback.
 
 ### Quarterly review
 
@@ -240,14 +251,14 @@ The archetype owner:
 3. Compares reference scores with the products' acceptance results. Where a version passes the reference eval but fails a product in scope, asks for donated cases.
 4. Lists the products that call a version outside its scope, and proposes a widened scope or a new archetype when a second product has the same need.
 5. Proposes retiring an archetype that has had no products for two quarters, or merging two archetypes when one model ranks first, or ties for first, on both reference evals.
-6. Updates the blast radius and the routing guide entry.
+6. Updates the blast radius, the fallback and the routing guide entry.
 7. Reviews decisions that were reversed or that overrode a rule.
 
 The data science team re-labels a random 10% of one reference slice per archetype, a different slice each quarter. Below 90% agreement, the slice is re-labeled before it is used again.
 
 The Platform Owner:
 
-- reviews products per archetype and versions per model, and decides with the Production Engineers whether a model that backs several archetypes needs a fallback model;
+- reviews products per archetype and versions per model, and checks that every active archetype names a fallback and which comparable models are still untested;
 - checks that every pilot or active archetype has an owner and its step records, with the right approvers;
 - once a year, sends a seeded proposal, such as a definition with a wrong context length, through the steps to check that it is caught.
 
@@ -257,7 +268,7 @@ Severity 1: act the same day. Severity 2: within two weeks. Severity 3: at the n
 
 | Signal | Severity | Response | Owner |
 | --- | --- | --- | --- |
-| A product reports a critical-error incident | 1 | The product switches to its fallback; kill switch if the model is at fault; review within 5 working days; donated cases join the regression slice | Business Owner, Production Engineers, archetype owner |
+| A product reports a critical-error incident | 1 | The product pauses the affected use; kill switch if the model is at fault, then forced replacement; review within 5 working days; donated cases join the regression slice | Business Owner, Production Engineers, archetype owner |
 | A product reports quality below its floor | 2 | Gap diagnosis, then Step 3 if it finds a catalog gap | Archetype owner |
 | A re-evaluation shows a serving version below the reference floor | 2 | Open Stage 0 for a replacement version; tell the Business Owners | Archetype owner |
 | A product in scope fails its acceptance test on a version that passed the reference eval | 2 | Gap diagnosis; if the model is at fault, donated cases join the reference set, and every serving version is re-run | Archetype owner |
@@ -303,7 +314,6 @@ languages: [en]
 untrusted_content: yes                # adds injection samples to the acceptance set
 acceptance: { metric: answer_correctness, floor: 0.85, max_critical_errors: 0.03 }
 samples: <at least 100 labeled samples, kept by the product>
-fallback: <what the product does when its version is down or retired>
 cost_target_per_1k: <amount, if known>
 accepted: <Business Owner, date>      # the archetype's conditions and residual risk; renewed yearly
 ```
@@ -337,7 +347,7 @@ products: [analytics-assistant, finance-reporting]
 conditions:
   - Queries run with the end user's own database permissions, read-only
 blast_radius: 2 products, about 6,500 requests a day, both on v1; the model serves no other alias
-fallback: Analysts write SQL themselves; finance runs its manual reports
+fallback: { kind: comparable model, model: <model>, tested: no }   # kind: previous version | comparable model
 risks:
   - risk: Instructions injected into column comments or row values, reworded when blocked
     control: Held-out injection set; yearly red-team round
@@ -395,6 +405,7 @@ known_differences:                    # prompt format, output format, refusals
 reference_prompt: <path@commit>
 ga: 2027-08-03
 end_date: 2027-11-01                  # 90 days after GA
+fallback: text-to-sql-v1              # the previous version, or a comparable model
 sent_to: [<every Business Owner on the archetype>]
 ```
 
@@ -438,7 +449,7 @@ No hosted model meets the draft floor, and the candidate does. The code assistan
 
 **Step 6.** The candidate goes GA as `text-to-sql-v1`, with the analytics assistant as pilot. Its acceptance score is 0.86, a pass within a tie. Of 50 labeled live outputs, 44 are correct: the 95% Wilson interval is 0.76 to 0.94, and 0.86 is inside it. The archetype goes active.
 
-**Version 2.** A new model scores 0.93 on the reference set against 0.87 for version 1: more than a tie. `text-to-sql-v2` reaches GA on Aug 3, 2027, and version 1's end date is Nov 1. The analytics assistant scores 0.83 with its old prompt and 0.90 with the new reference prompt, and moves in September. The finance tool scores 0.91 and moves in October. Version 1 then retires before its end date.
+**Version 2.** A new model scores 0.93 on the reference set against 0.87 for version 1: more than a tie. `text-to-sql-v2` reaches GA on Aug 3, 2027, and version 1's end date is Nov 1. The analytics assistant scores 0.83 with its old prompt and 0.90 with the new reference prompt, and moves in September. The finance tool scores 0.91 and moves in October. Version 1 then retires before its end date and stays the archetype's fallback.
 
 ## Known gaps
 
@@ -462,7 +473,7 @@ No hosted model meets the draft floor, and the candidate does. The code assistan
 
 - [ ] Which data science team member owns each starting archetype?
 - [ ] Which Business Owners supply the first profiles and donate the first samples, and by when?
-- [ ] Does the Platform Owner accept the deviation from the design standard's tiering rule?
+- [ ] Does the Platform Owner accept the deviations from the design standard's tiering and manual fallback rules?
 - [ ] Who approves in the Platform Owner's place when the Platform Owner proposed the change?
 - [ ] Can the Production Engineers hold capacity for two versions of every archetype through a 90-day notice period?
 - [ ] Should the platform hold acceptance sets, so that it can audit them?
@@ -486,3 +497,4 @@ Send feedback as an issue or pull request in `red-arg/onboard-llm`. The Platform
 | 0.9 | Nov 10, 2026 | Data classification removed |
 | 0.10 | Nov 10, 2026 | Versioned releases: platform-owned reference evals, product-run acceptance tests, versioned aliases with a 90-day notice period |
 | 0.11 | Nov 10, 2026 | Reduced to the platform's framework. Removed: product responsibilities and product-design refusals (products attest only to the archetype's conditions and residual risk), sample clearing, tooling, repository paths and repeated rules. Task, metric and starting-archetype tables merged |
+| 0.12 | Nov 11, 2026 | Manual fallback removed. Each archetype names a fallback model: the previous version, or a comparable model that is recommended to be tested in advance |

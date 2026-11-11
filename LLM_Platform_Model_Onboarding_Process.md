@@ -144,7 +144,7 @@ For a board-approved model, the platform model owner decides how it enters the c
 
 - **Add:** fills a gap or a new archetype.
 - **Replace:** clearly beats the incumbent on an archetype; the incumbent moves to deprecation.
-- **Add as fallback:** for resilience or a specialized need within an archetype.
+- **Add as fallback:** held as an archetype's fallback (see the [archetype framework](LLM_Platform_Archetype_Framework.md), Versions), and not served until the current version is stopped.
 - **Reject:** no meaningful gain over the current catalog.
 
 The owner drafts the model card: approved archetypes, license class and obligations, eval results, known weaknesses.
@@ -345,7 +345,7 @@ Set target durations per stage so the process doesn't become a bottleneck that p
 | --- | --- | --- | --- |
 | Full onboarding | New model family or new publisher | All stages, 0 to 11 | 4 to 6 weeks, intake to first go-live |
 | Fast track | Minor or patch version of an approved model, same license and architecture | Security (Stage 3), garak scan (Stage 4), eval regression on approved archetypes (Stage 5), readiness (Stage 9), go live (Stage 11); owner and security sign-off replace the board | 1 to 2 weeks |
-| Emergency replacement | Critical vulnerability in a GA model | Kill switch or rollback first; replacement follows fast track if available, else full onboarding | Mitigation same day |
+| Emergency replacement | Critical vulnerability in a GA model | Kill switch or rollback first; products then move to the archetype's fallback. A fallback that was not tested in advance follows fast track if available, else full onboarding | Mitigation same day |
 
 The board should meet on a fixed cadence, for example every two weeks, so approvals don't wait on scheduling.
 
