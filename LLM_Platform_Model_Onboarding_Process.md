@@ -46,7 +46,7 @@ These must exist before the first model is onboarded. Without them, every evalua
 5. **License policy.** Which license classes the platform accepts: commercial use allowed, internal use only, or not acceptable.
 6. **Security baseline.** Approved sources, allowed file formats, scanning tools, and the isolated environment where untrusted weights are first loaded.
 7. **Model registry and model card template.** One record per model version holding its status, owner, artifacts and approvals.
-8. **Gateway with archetype aliases.** Authentication, logging, guardrails, rate limits, usage metering and a per-model kill switch, applied to every hosted model.
+8. **Gateway with archetype aliases.** Authentication, logging, guardrails, rate limits and usage metering, applied to every hosted model.
 
 ## Stage-by-stage flow
 
@@ -154,7 +154,7 @@ The owner drafts the model card: approved archetypes, license class and obligati
 Runs in the dev environment, which mirrors production: same hardware class, serving stack, gateway configuration and network isolation. Everything is set up and proven in dev, then promoted unchanged at Go Live.
 
 - Serving configuration, capacity plan and autoscaling.
-- Gateway integration: alias mapping, guardrails, rate limits, metering, kill switch.
+- Gateway integration: alias mapping, guardrails, rate limits, metering.
 - Dashboards and alerts for latency, errors, safety-filter hits and usage.
 - Runbook, rollback plan and on-call ownership.
 - Load test at expected peak.
@@ -176,7 +176,7 @@ This is the second approval layer, owned by each product team. It runs in the de
 The model and the product move from dev to production together.
 
 - **Promote unchanged:** the platform deploys to production exactly what was signed off at G8: the same model version and hash, serving configuration, gateway alias, guardrails, dashboards and alerts. Any change goes back through dev first.
-- **Production checks:** smoke test through the production gateway, confirm alerts reach on-call, and test the kill switch and rollback.
+- **Production checks:** smoke test through the production gateway, confirm alerts reach on-call, and test rollback.
 - **First go-live for a model:** status becomes **GA**, and the model is published in the catalog and routing guide with its model card.
 - **If replacing an incumbent:** shadow traffic, then a canary on the alias, then full cutover. Announce the incumbent's deprecation date to affected products.
 - **Product go-live:** production credentials are issued for the use case approved at Stage 10. The product owner confirms its application-level evaluation passed in dev.
@@ -312,7 +312,7 @@ Every model version carries exactly one status in the registry, and only Dev and
 
 - Monitor quality, latency, safety-filter hits and incidents.
 - Re-run archetype eval suites on a fixed schedule, for example quarterly, alongside new candidates.
-- Watch upstream for vulnerabilities, license changes and end of support. A critical vulnerability can trigger the kill switch.
+- Watch upstream for vulnerabilities, license changes and end of support. A critical vulnerability can trigger an emergency replacement.
 - Give products a fixed notice period before retirement, with the replacement alias named in the deprecation notice.
 
 **Changes that need a new onboarding:** a new major version, a fine-tune, a new quantized variant, or a request to extend the model to a new archetype.
@@ -345,7 +345,7 @@ Set target durations per stage so the process doesn't become a bottleneck that p
 | --- | --- | --- | --- |
 | Full onboarding | New model family or new publisher | All stages, 0 to 11 | 4 to 6 weeks, intake to first go-live |
 | Fast track | Minor or patch version of an approved model, same license and architecture | Security (Stage 3), garak scan (Stage 4), eval regression on approved archetypes (Stage 5), readiness (Stage 9), go live (Stage 11); owner and security sign-off replace the board | 1 to 2 weeks |
-| Emergency replacement | Critical vulnerability in a GA model | Kill switch or rollback first; replacement follows fast track if available, else full onboarding | Mitigation same day |
+| Emergency replacement | Critical vulnerability in a GA model | Rollback first; replacement follows fast track if available, else full onboarding | Mitigation same day |
 
 The board should meet on a fixed cadence, for example every two weeks, so approvals don't wait on scheduling.
 
