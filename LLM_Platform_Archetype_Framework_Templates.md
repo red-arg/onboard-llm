@@ -1,6 +1,6 @@
 # LLM Platform: Archetype Framework Templates
 
-Version 0.13 · Nov 12, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
+Version 0.15 · Nov 12, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
 The templates for the records the [archetype framework](LLM_Platform_Archetype_Framework.md) asks for: the profile (Step 1), the definition (Step 4), the step record, the acceptance record and the release notice. They are versioned with the framework.
 
@@ -42,11 +42,11 @@ offer:
   cost_target_per_1k: 20
 reference:
   suite: text-to-sql/v1
-  slices: [reference (200), reference-de (100), regression, injection (held out)]
-  sources: { written: 90, public: 50, donated: 60 }
+  datasets:                           # public, used as published
+    - { slice: reference, dataset: <public dataset>, revision: <revision> }
+    - { slice: reference-de, dataset: <public dataset>, revision: <revision> }
+  other_slices: [regression, injection (held out)]
   metric: execution_accuracy
-  floor: 0.85
-  max_critical_errors: 0.02
   safety_additions: [destructive statements, injections in column comments and row values]
 versions:
   - { alias: text-to-sql-v1, model: <registry id>@<hash>, status: current, ga: 2027-01-18, end_date: null }
@@ -60,7 +60,7 @@ risks:
     test: Red-team success no higher than in the last round
     owner: Platform data science team
   - risk: A query returns the expected shape but wrong values
-    control: The reference critical-error maximum; each product's own maximum
+    control: The G5 policy's critical-error criterion; each product's own maximum
     test: Critical-error rate on the reference set and in each acceptance record
     owner: Archetype owner
 residual_risk:
@@ -72,10 +72,10 @@ residual_risk:
 
 ```yaml
 archetype: text-to-sql
-step: 3                               # 2 fit check | 3 capability test | 4 approval | 5 readiness | 6 go active
+step: 3                               # 2 fit check | 3 capability test | 4 approval | 5 go active
 decided_by: <user>                    # not the proposer
 decided_at: 2026-11-20
-inputs: [<profiles@commit>, <draft set@commit>, <every run, failed runs included>]
+inputs: [<profiles@commit>, <suite version>, <every run, failed runs included>]
 outcome: create an archetype
 suitability: { likelihood: medium, decision: proceed, business_owners_told: yes }
 conditions: []
