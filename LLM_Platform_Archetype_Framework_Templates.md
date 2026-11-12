@@ -1,6 +1,6 @@
 # LLM Platform: Archetype Framework Templates
 
-Version 0.13 · Nov 12, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
+Version 0.14 · Nov 12, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
 The templates for the records the [archetype framework](LLM_Platform_Archetype_Framework.md) asks for: the profile (Step 1), the definition (Step 4), the step record, the acceptance record and the release notice. They are versioned with the framework.
 
@@ -13,7 +13,7 @@ use_case: <what the product asks the model to do, in one line>
 status: live                          # live | planned, with the quarter
 task: answer
 output: prose
-alias: rag-v1                         # the version the product calls
+alias: rag-v1                         # the version the product calls; filled on joining
 latency: interactive                  # real-time (first token within 300 ms) | interactive (1.5 s) | batch
 lengths: { input_p95: 9000, output_p95: 600 }             # tokens
 volume: { requests_per_day: 5000, peak_per_minute: 40 }
@@ -22,7 +22,7 @@ untrusted_content: yes                # adds injection samples to the acceptance
 acceptance: { metric: answer_correctness, floor: 0.85, max_critical_errors: 0.03 }
 samples: <at least 100 labeled samples, kept by the product>
 cost_target_per_1k: <amount, if known>
-accepted: <Business Owner, date>      # the archetype's conditions and residual risk; renewed yearly
+accepted: <Business Owner, date>      # the archetype's conditions and residual risk; filled on joining, renewed yearly
 ```
 
 **Definition** (filled in for the [text-to-SQL example](LLM_Platform_Archetype_Framework.md#example-text-to-sql))
@@ -50,6 +50,7 @@ reference:
   safety_additions: [destructive statements, injections in column comments and row values]
 versions:
   - { alias: text-to-sql-v1, model: <registry id>@<hash>, status: current, ga: 2027-01-18, end_date: null }
+variants: []                          # each with its own offer and versions
 products: [analytics-assistant, finance-reporting]
 conditions:
   - Queries run with the end user's own database permissions, read-only
@@ -73,7 +74,7 @@ residual_risk:
 ```yaml
 archetype: text-to-sql
 step: 3                               # 2 fit check | 3 capability test | 4 approval | 5 readiness | 6 go active
-decided_by: <user>                    # not the proposer
+decided_by: [<user>]                  # whoever decides or approves the step; never the proposer
 decided_at: 2026-11-20
 inputs: [<profiles@commit>, <draft set@commit>, <every run, failed runs included>]
 outcome: create an archetype
@@ -90,7 +91,7 @@ alias: text-to-sql-v2
 harness: text-to-sql/v1               # the suite version
 samples: { count: 100, injection: 20, commit: <commit> }
 prompt: <product prompt@commit>
-result: { execution_accuracy: 0.90, critical_errors: 0.01 }
+result: { execution_accuracy: 0.91, critical_errors: 0.01 }
 required: { floor: 0.85, max_critical_errors: 0.03 }
 outcome: pass                         # pass | pass within a tie | fail
 signed_by: <Business Owner, date>
