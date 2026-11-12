@@ -1,6 +1,6 @@
 # LLM Platform: Archetype Framework
 
-Version 0.12 · Nov 11, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
+Version 0.13 · Nov 12, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
 ## Purpose
 
@@ -286,115 +286,7 @@ Severity 1: act the same day. Severity 2: within two weeks. Severity 3: at the n
 
 ## Templates
 
-**Profile**
-
-```yaml
-product: <product>
-owner: <Business Owner>
-use_case: <what the product asks the model to do, in one line>
-status: live                          # live | planned, with the quarter
-task: answer
-output: prose
-alias: rag-v1                         # the version the product calls
-latency: interactive                  # real-time (first token within 300 ms) | interactive (1.5 s) | batch
-lengths: { input_p95: 9000, output_p95: 600 }             # tokens
-volume: { requests_per_day: 5000, peak_per_minute: 40 }
-languages: [en]
-untrusted_content: yes                # adds injection samples to the acceptance set
-acceptance: { metric: answer_correctness, floor: 0.85, max_critical_errors: 0.03 }
-samples: <at least 100 labeled samples, kept by the product>
-cost_target_per_1k: <amount, if known>
-accepted: <Business Owner, date>      # the archetype's conditions and residual risk; renewed yearly
-```
-
-**Definition** (filled in for the example below)
-
-```yaml
-id: text-to-sql                       # lowercase, names the capability
-owner: <archetype owner>
-status: active                        # proposed | pilot | active | retired
-tasks: [code]
-outputs: [query]
-scope: Write one read-only SQL query that answers a question over a supplied schema.
-out_of_scope: [running the query, general code (code), answers from documents (rag)]
-offer:
-  latency: interactive
-  context_length: 32k
-  languages: [en, de]
-  cost_target_per_1k: 20
-reference:
-  suite: text-to-sql/v1
-  slices: [reference (200), reference-de (100), regression, injection (held out)]
-  sources: { written: 90, public: 50, donated: 60 }
-  metric: execution_accuracy
-  floor: 0.85
-  max_critical_errors: 0.02
-  safety_additions: [destructive statements, injections in column comments and row values]
-versions:
-  - { alias: text-to-sql-v1, model: <registry id>@<hash>, status: current, ga: 2027-01-18, end_date: null }
-products: [analytics-assistant, finance-reporting]
-conditions:
-  - Queries run with the end user's own database permissions, read-only
-blast_radius: 2 products, about 6,500 requests a day, both on v1; the model serves no other alias
-risks:
-  - risk: Instructions injected into column comments or row values, reworded when blocked
-    control: Held-out injection set; yearly red-team round
-    test: Red-team success no higher than in the last round
-    owner: Platform data science team
-  - risk: A query returns the expected shape but wrong values
-    control: The reference critical-error maximum; each product's own maximum
-    test: Critical-error rate on the reference set and in each acceptance record
-    owner: Archetype owner
-residual_risk:
-  risks: [wrong values within each product's critical-error maximum]
-  rationale: Each Business Owner sets the maximum for the product's use and decides who checks the results.
-```
-
-**Step record**
-
-```yaml
-archetype: text-to-sql
-step: 3                               # 2 fit check | 3 capability test | 4 approval | 5 readiness | 6 go active
-decided_by: <user>                    # not the proposer
-decided_at: 2026-11-20
-inputs: [<profiles@commit>, <draft set@commit>, <every run, failed runs included>]
-outcome: create an archetype
-suitability: { likelihood: medium, decision: proceed, business_owners_told: yes }
-conditions: []
-reason: <a few sentences>
-```
-
-**Acceptance record**
-
-```yaml
-profile: <profile@commit>
-alias: text-to-sql-v2
-harness: text-to-sql/v1               # the suite version
-samples: { count: 100, injection: 20, commit: <commit> }
-prompt: <product prompt@commit>
-result: { execution_accuracy: 0.90, critical_errors: 0.01 }
-required: { floor: 0.85, max_critical_errors: 0.03 }
-outcome: pass                         # pass | pass within a tie | fail
-signed_by: <Business Owner, date>
-```
-
-**Release notice**
-
-```yaml
-archetype: text-to-sql
-new: text-to-sql-v2
-replaces: text-to-sql-v1
-reason: better on the reference eval  # better | ties at lower cost or latency | forced replacement
-reference_scores:                     # same suite version for both
-  text-to-sql-v1: { reference: 0.87, reference-de: 0.86, critical_errors: 0.02 }
-  text-to-sql-v2: { reference: 0.93, reference-de: 0.91, critical_errors: 0.01 }
-known_differences:                    # prompt format, output format, refusals
-  - v2 wraps the query in a code fence unless the prompt forbids it
-reference_prompt: <path@commit>
-ga: 2027-08-03
-end_date: 2027-11-01                  # 90 days after GA
-sent_to: [<every Business Owner on the archetype>]
-```
+The profile, definition, step record, acceptance record and release notice templates are in the [archetype framework templates](LLM_Platform_Archetype_Framework_Templates.md).
 
 ## Example: text to SQL
 
@@ -430,7 +322,7 @@ The products and numbers are illustrative.
 
 No hosted model meets the draft floor, and the candidate does. The code assistance eval ranks M1 first, but M1 is 15 points below M2 on the draft set: create an archetype. Likelihood is medium, because the candidate clears the floor by a tie and its critical errors are at the 2% maximum, so both Business Owners are told the margin.
 
-**Step 4.** The definition is the template above. Context length is 1.2 × (18,000 + 400) = 22,080 tokens, rounded up to 32k.
+**Step 4.** The definition is the one filled in under [Templates](LLM_Platform_Archetype_Framework_Templates.md). Context length is 1.2 × (18,000 + 400) = 22,080 tokens, rounded up to 32k.
 
 **Step 5.** The reference set grows to 200 samples, with a German slice of 100. A small internal model scores 0.31 and fails the floor, and the suite ranks M2 first among hosted models, as Step 3 did.
 
@@ -486,3 +378,4 @@ Send feedback as an issue or pull request in `red-arg/onboard-llm`. The Platform
 | 0.10 | Nov 10, 2026 | Versioned releases: platform-owned reference evals, product-run acceptance tests, versioned aliases with a 90-day notice period |
 | 0.11 | Nov 10, 2026 | Reduced to the platform's framework. Removed: product responsibilities and product-design refusals (products attest only to the archetype's conditions and residual risk), sample clearing, tooling, repository paths and repeated rules. Task, metric and starting-archetype tables merged |
 | 0.12 | Nov 11, 2026 | Kill switch and fallbacks removed: no kill switch, no product fallback and no fallback model. A model that must go is replaced by the next version on the fast track |
+| 0.13 | Nov 12, 2026 | Templates moved to their own document |
