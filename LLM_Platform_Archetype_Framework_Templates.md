@@ -74,7 +74,7 @@ residual_risk:
 ```yaml
 archetype: text-to-sql
 step: 3                               # 2 fit check | 3 capability test | 4 approval | 5 readiness | 6 go active
-decided_by: [<user>]                  # whoever decides or approves the step; never the proposer
+decided_by: [<user>]                  # whoever decides or approves the step; at Steps 3 and 4, not the proposer
 decided_at: 2026-11-20
 inputs: [<profiles@commit>, <draft set@commit>, <every run, failed runs included>]
 outcome: create an archetype
@@ -103,7 +103,7 @@ signed_by: <Business Owner, date>
 archetype: text-to-sql
 new: text-to-sql-v2
 replaces: text-to-sql-v1
-reason: better on the reference eval  # better | ties at lower cost or latency | forced replacement
+reason: better on the reference set   # better | ties at lower cost or latency | closes a gap | forced replacement
 reference_scores:                     # same suite version for both
   text-to-sql-v1: { reference: 0.87, reference-de: 0.86, critical_errors: 0.02 }
   text-to-sql-v2: { reference: 0.93, reference-de: 0.91, critical_errors: 0.01 }

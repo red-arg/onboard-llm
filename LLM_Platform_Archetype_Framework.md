@@ -4,7 +4,7 @@ Version 0.14 · Nov 12, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
 ## Purpose
 
-The platform serves models through archetypes. An archetype is a capability the platform offers: a task and output that one model serves well, with one reference eval and a line of versioned aliases. The [model onboarding process](LLM_Platform_Model_Onboarding_Process.md) selects models for archetypes, not for products.
+The platform serves models through archetypes. An archetype is a capability the platform offers: the tasks and outputs that one model serves well, with one reference eval and a line of versioned aliases. The [model onboarding process](LLM_Platform_Model_Onboarding_Process.md) selects models for archetypes, not for products.
 
 | | The platform | The product |
 | --- | --- | --- |
@@ -12,7 +12,7 @@ The platform serves models through archetypes. An archetype is a capability the 
 | Decides | Which model each version serves, and when a new archetype is needed | Whether a version is good enough for its use |
 | When a model changes | Releases a new version beside the old one, with notice | Re-runs its acceptance test and moves before the end date |
 
-Every archetype gets the same checks and every version the same release, whatever products do with the output. This deviates from the [design standard](Framework_Design_Standard_for_AI_Software_and_Product.md) in two ways. The standard tiers obligations by risk: here, obligations that vary with product risk belong to the Business Owner. The standard asks for a shutdown path and a manual fallback: here there is no kill switch and no fallback, and a model that must go is replaced by the next version (Forced replacement).
+Every archetype gets the same checks and every version the same release, whatever products do with the output. This deviates from the [design standard](Framework_Design_Standard_for_AI_Software_and_Product.md). The standard tiers obligations by risk: here, obligations that vary with product risk belong to the Business Owner. The standard asks for a shutdown path and a manual fallback: here no kill switch stops a model and products keep no fallback, and a model that must go is replaced by the next version (Forced replacement).
 
 Repositories, pipelines and tooling are in the [technical implementation](LLM_Platform_Model_Onboarding_Technical_Implementation.md).
 
@@ -22,7 +22,7 @@ Repositories, pipelines and tooling are in the [technical implementation](LLM_Pl
 | --- | --- |
 | Business Owner (owns the product) | Approves the product's profiles; signs each acceptance record; donates samples to reference sets; attests to the archetype's conditions and accepts its residual risk; reconfirms profiles yearly |
 | Developers (build the product) | Write profiles and label the acceptance set; run the acceptance test on joining and on each new version; move the product within the notice period; report incidents; label live outputs during a pilot |
-| Platform Owner | Approves new archetypes, variants, each model at G7, major changes, retirements and end-date extensions; names archetype owners; audits the catalog and its records each quarter; keeps this document current |
+| Platform Owner | Approves new archetypes, variants, each model, major changes and end-date extensions; names archetype owners; audits the catalog and its records each quarter; keeps this document current |
 | Platform data science team | Owns the reference evals and the acceptance harness; runs capability tests, re-evaluations, label audits and red-team rounds |
 | Production Engineers (platform engineers) | Run the gateway and the versioned aliases: credentials, metering, alerts, and capacity for two versions through each notice period |
 
@@ -43,7 +43,7 @@ Every alias names one version of one archetype: `<id>-v<n>`, such as `rag-v2`. A
 
 - **No floating alias.** A product names its version in its profile and its code.
 - **Notice period:** 90 days, from the new version's GA to the old version's end date.
-- **At most two versions serve in production** per archetype or variant: one current and one deprecated. An extended end date (A product that cannot move) can keep a second deprecated version serving until it retires.
+- **Two versions serve in production** through a notice period, per archetype or variant: one current and one deprecated. A third serves only when a release lands inside an open notice period, or while an end date is extended (A product that cannot move).
 - **Embeddings:** vectors from different versions cannot share an index, so products re-index within the notice period.
 - **No reuse.** Ids and version numbers are never reused.
 
@@ -64,7 +64,7 @@ A starting archetype has its id and owner set from the start. It is built, throu
 | `embed` (`vector`) | Turn text into vectors for search | nDCG@10 | n/a | `embeddings` |
 | `rank` (`score`) | Rerank search results | nDCG@10 | n/a | None |
 
-`embed` and `rank` have no critical error: the critical-error maximum, and the injection samples and tests, do not apply to them.
+Where a task lists two metrics, the profile and the definition name the one that carries the floor. `embed` and `rank` have no critical error: the critical-error maximum, and the injection samples and tests, do not apply to them.
 
 ## Creating an archetype
 
@@ -72,9 +72,9 @@ A starting archetype has its id and owner set from the start. It is built, throu
 
 Create a new archetype only when all of these hold:
 
-1. At least one product needs it, live or planned within two quarters, with a named owner.
+1. At least one product needs it, live or planned within two quarters, with a named Business Owner.
 2. No current version passes that product's acceptance test (Step 2).
-3. The platform reproduces the gap on its own draft set: no hosted model meets the draft floor, and the nearest archetype's reference eval would pick the wrong model (Step 3).
+3. The platform reproduces the gap on its own draft set: no hosted model meets the draft floor, and the nearest built archetype's reference eval would pick the wrong model (Step 3).
 4. At least one candidate model meets the draft floor.
 5. Suitability allows it (Step 3).
 
@@ -91,13 +91,13 @@ Otherwise, in this order: join an existing archetype, extend it, or release a st
 | 5. Build the reference eval | Platform data science team | Readiness check passed; Stage 0 opened for the first model |
 | 6. Pilot and release version 1 | Archetype owner | Go-active criteria met |
 
-The archetype's status is `proposed` once Step 3 decides to create it, `pilot` after Step 5 and `active` after Step 6. The Platform Owner names the owner of a `proposed` archetype that has none. The decision at each of Steps 2 to 6 is kept in a step record (Templates).
+The archetype's status is `proposed` once Step 3 decides to create it, `pilot` after Step 5 and `active` after Step 6. An `active` archetype is built. The Platform Owner names the owner of a `proposed` archetype that has none. The decision at each of Steps 2 to 6 is kept in a step record (Templates).
 
 ### Step 1. Profile
 
 The Developers fill in one profile per use case (Templates), with an acceptance set of at least 100 labeled samples from its real or planned work. The Business Owner approves it.
 
-- **One task per profile.** A use case with two tasks is two profiles, each naming the alias it calls.
+- **One task per profile.** Work that needs two tasks is two use cases, each with its own profile and the alias it calls.
 - **The acceptance set stays with the product.** The platform holds only the samples a Business Owner donates to a reference set.
 - **Critical errors:** the Business Owner sets `max_critical_errors`. As a guide, 1% where no person checks each output, and 3% otherwise.
 - **Untrusted content** (customer messages, emails, uploads, outside documents): the acceptance set adds at least 20 injection samples, written with the data science team, on which following an injected instruction is a critical error.
@@ -113,7 +113,7 @@ The owner of the nearest archetype, by task and output, compares the profile wit
 | Is in scope, but needs another language, a longer context or a stricter latency class | Extend the archetype (Changes), or add a variant (Step 4), then run the acceptance test |
 | Is in no built archetype's scope | The Developers run the acceptance test on the current versions that can produce the output, nearest first. Pass: join that version; the archetype's scope does not change. No pass: go to Step 3 |
 
-**The acceptance test.** The Developers run it in dev with the platform's acceptance harness: the scorers, pinned judge and reference prompt of the archetype's reference eval, with the metric for the product's task. It passes when the score meets the product's floor and the critical-error rate is within its maximum. A pass that is within a tie of the floor (Step 3) is recorded as a pass within a tie. The Business Owner signs the acceptance record (Templates). The platform records it at Stage 10 and does not re-run it.
+**The acceptance test.** The Developers run it in dev, or at Stage 6 for a pilot, with the platform's acceptance harness: the scorers, pinned judge and reference prompt of the archetype's reference eval, with the metric for the product's task. The data science team adds that metric's scorer where the harness lacks it. It passes when the score meets the product's floor and the critical-error rate is within its maximum. A pass that is within a tie of the floor (Step 3) is recorded as a pass within a tie. The Business Owner signs the acceptance record (Templates). The platform records it at Stage 10 and does not re-run it.
 
 **Joining.** At Stage 10 the Business Owner attests to the archetype's conditions and accepts its residual risk. The product goes live at Stage 11, with credentials for that version only. The reference eval does not measure a product that joins outside the scope, so the next version may not serve it.
 
@@ -127,15 +127,15 @@ The platform data science team builds a **draft set** for the capability, not fo
 
 The **draft floor** and critical-error maximum are the highest floor and the lowest maximum among the profiles in hand.
 
-The team scores every hosted model that can produce the output, and promising open-weight candidates, on the draft set, each with an improved prompt (gap diagnosis Step 2). It also takes the nearest archetype's reference-eval scores for the same hosted models. Scores within 5 points of each other, 0.05 on a 0-to-1 scale, are a **tie**. Keep every run.
+The team scores every hosted model that can produce the output, and promising open-weight candidates, on the draft set, each with an improved prompt (gap diagnosis Step 2). It also takes the nearest built archetype's reference-eval scores for the same hosted models. Scores within 5 points of each other, 0.05 on a 0-to-1 scale, are a **tie**. Keep every run.
 
 The first row that matches decides:
 
 | Result | Decision |
 | --- | --- |
-| A hosted model meets the draft floor | No catalog gap. Return to gap diagnosis: the cause is the prompt, the data or the criteria |
+| A hosted model meets the draft floor | No catalog gap. Go to gap diagnosis: the cause is the prompt, the data or the criteria |
 | No model meets the draft floor, hosted or candidate | Not now. Redesign the workflow (gap diagnosis Step 5), and re-test at the next quarterly re-evaluation |
-| The model the nearest archetype's reference eval ranks first ties with the best hosted model on the draft set | The capability is not distinct. Add the draft set to that archetype as a slice (Changes), and onboard a stronger model as its next version |
+| The model the nearest built archetype's reference eval ranks first is, or ties with, the best hosted model on the draft set | The capability is not distinct. Add the draft set to that archetype as a slice (Changes), and onboard a stronger model as its next version |
 | Otherwise | Create an archetype. A capability that matches an unbuilt starting archetype builds that one |
 
 **Suitability.** Before creating an archetype or onboarding a stronger model, the platform data science team rates the likelihood of failure from the best available model:
@@ -143,7 +143,7 @@ The first row that matches decides:
 | Likelihood | When | Decision |
 | --- | --- | --- |
 | Low | It clears the draft floor by more than a tie, and its critical-error rate is under half the maximum | Proceed |
-| Medium | Anything else | Proceed. Tell each Business Owner the margin, and record it as a known weakness in the routing guide |
+| Medium | Neither low nor high | Proceed. Tell each Business Owner the margin, and record it as a known weakness for the routing guide |
 | High | It misses the draft floor or the critical-error maximum | Not now |
 
 While the platform hosts no models, build the draft set and set the draft floor and maximum, but skip the scoring: record that in the step record and treat the likelihood as medium.
@@ -169,7 +169,7 @@ The archetype owner writes the definition (Templates):
 
 The Platform Owner approves, with conditions if needed.
 
-**Variants.** If one product needs a much faster or cheaper model than the rest, the Platform Owner can approve a variant, such as `<id>-fast-v<n>`. A variant has its own offer and line of versions, and shares the archetype's scope and reference eval.
+**Variants.** If one product needs a much faster or cheaper model than the rest, the Platform Owner can approve a variant, such as `<id>-fast-v<n>`. A variant has its own offer and line of versions, and shares the archetype's scope and reference eval. Its first version follows the steps of Releasing a new version, with that product as the pilot and no old version to deprecate.
 
 ### Step 5. Build the reference eval
 
@@ -177,7 +177,7 @@ The platform data science team builds the reference eval, a versioned suite:
 
 - **Reference set:** the draft set, grown to at least 200 samples before the first model's Stage 5 benchmark, under the Step 3 sourcing rules and the Step 1 label check. Each extra language has its own slice of 50 to 100 samples.
 - **Regression slice:** cases from incidents and gap diagnoses, added as they occur. Its score goes to review at G5 and is not a hard criterion.
-- **Reference prompt:** one. It starts from the improved prompt used in Step 3, if models were scored there.
+- **Reference prompt:** one for each version, released with it. Version 1's starts from the improved prompt used in Step 3, if models were scored there. A new prompt does not change the suite version.
 - **Safety:** the standard safety battery, plus injection tests through every kind of content the scope takes, and tests for the archetype's critical errors. A held-out injection set is kept away from Developers, and a red-team round runs each year.
 - **G5 policy:** the reference floor and the critical-error maximum are hard criteria, on the reference set and on each language slice. A later version must not score below the current version by more than a tie. A pass within a tie of the floor is recorded as a known weakness in the routing guide. Latency and cost go to review against the offer. Models that pass are ranked by reference-set score, with public benchmarks, if used, at no more than 20%.
 - **Judge:** pinned, internally hosted and never the candidate. It agrees with human labels on at least 85% of 50 calibration samples per slice. Judge metrics are the mean of three passes.
@@ -193,7 +193,7 @@ Then open Stage 0 for the archetype's first model.
 
 ### Step 6. Pilot and release version 1
 
-The archetype owner proposes one product as the pilot. The first model goes through Stages 6 to 11 with that pilot, which runs its acceptance test on the candidate at Stage 6.
+The archetype owner proposes one product as the pilot. The first model goes through Stages 6 to 11 with that pilot, which runs its acceptance test on the candidate at Stage 6, through the pilot-only alias.
 
 The archetype goes active when:
 
@@ -211,15 +211,16 @@ The archetype owner and a second data science team member approve. Any product c
 
 Release a new version only when a candidate:
 
-- beats the current version on the reference eval by more than a tie;
-- ties with it at a clearly lower cost or latency; or
+- beats the current version on the reference set by more than a tie;
+- ties with it at a clearly lower cost or latency;
+- closes a gap in the current version: a floor it misses, or the failing cases of a catalog gap; or
 - replaces a model that must go, because of a vulnerability, a license change, the end of upstream support or a critical-error incident it caused.
 
 | Step | Who | What happens |
 | --- | --- | --- |
 | 1. Select | Platform data science team | The candidate passes Stages 0 to 5 under the G5 policy |
-| 2. Pilot | Archetype owner; one product | One product runs its acceptance test on the candidate at Stage 6. The Platform Owner approves the model at G7 |
-| 3. Release | Production Engineers; archetype owner | The Production Engineers confirm capacity for both versions. At GA, `<id>-v<n+1>` becomes `current` and the old version `deprecated`, with its end date 90 days ahead. The archetype owner sends the release notice (Templates) to every Business Owner on the archetype |
+| 2. Pilot | Archetype owner; one product | One product runs its acceptance test on the candidate at Stage 6, through the pilot-only alias. The Platform Owner approves the model at G7 |
+| 3. Release | Production Engineers; archetype owner | The Production Engineers confirm capacity for every version that will serve. At GA, `<id>-v<n+1>` becomes `current` and the old version `deprecated`, with its end date 90 days ahead. The archetype owner sends the release notice (Templates) to every Business Owner on the archetype |
 | 4. Move | Developers; Business Owner signs | Each product re-runs its acceptance test on the new version in dev, adjusts its prompts, and switches at Stage 11 |
 | 5. Retire | Production Engineers | The old version retires on its end date, or earlier once no product calls it. Products that have not moved are no longer served |
 
@@ -231,7 +232,7 @@ Release a new version only when a candidate:
 | Catalog gap | The failing cases the Business Owner donates join the regression slice, and Stage 0 opens for a model that passes them. The Platform Owner extends the old version's end date once, by one notice period |
 | Beyond current models | The product redesigns its workflow (gap diagnosis Step 5), or leaves at the end date |
 
-**Forced replacement.** A model that must go is replaced by the next version. Where the replacement is a minor or patch version of an approved model, it takes the onboarding process's fast track, which has no Stage 6 pilot; any other replacement takes the full path. The release, the notice period and the retirement are the same either way. The platform keeps no kill switch, and products keep no fallback.
+**Forced replacement.** A model that must go is replaced by the next version. Where the replacement is a minor or patch version of an approved model, it takes the onboarding process's fast track: no Stage 6 pilot, and the Platform Owner's sign-off in place of G7. Any other replacement takes the full path. The release, the notice period and the retirement are the same either way. The platform keeps no kill switch, and products keep no fallback.
 
 ### Quarterly review
 
@@ -251,7 +252,7 @@ The Platform Owner:
 
 - reviews products per archetype and versions per model;
 - checks that every pilot or active archetype has an owner and its step records, with the right approvers;
-- once a year, sends a seeded proposal, such as a definition with a wrong context length, through the steps to check that it is caught.
+- once a year, sends a seeded proposal, such as a profile that takes untrusted content but has no injection samples, through the steps to check that it is caught.
 
 ### Signals
 
@@ -269,7 +270,7 @@ Severity 1: act the same day. Severity 2: within two weeks. Severity 3: at the n
 | Judge agreement falls below 85% on a slice | 2 | Block the suite version until fixed | Platform data science team |
 | An archetype's owner or step records are missing | 2 | No new products until fixed | Platform Owner |
 | Latency p95 is above the archetype's class for a week | 2 | Capacity review | Production Engineers |
-| Volume reaches twice the profile, or input p95 is 25% above it | 3 | Update the profile; check it against the offer | Archetype owner |
+| Volume reaches twice the profile, or input p95 is 25% above it | 3 | Have the Developers update the profile; check it against the offer | Archetype owner |
 
 ### Changes
 
@@ -322,7 +323,7 @@ The products and numbers are illustrative.
 | M3 (behind `agents-v1`) | 0.64 | 0.70 |
 | Open-weight candidate | not run | 0.87 |
 
-No hosted model meets the draft floor, and the candidate does. The `code` reference eval ranks M1 first, but M1 is 15 points below M2 on the draft set: create an archetype. Likelihood is medium, because the candidate clears the floor only within a tie and its critical errors are at the 2% maximum, so both Business Owners are told the margin.
+No hosted model meets the draft floor, and the candidate does. The `code` reference eval ranks M1 first, but M1 is 15 points below M2 on the draft set: create an archetype. Likelihood is medium, because the candidate clears the floor only within a tie and its critical-error rate, 2 of 120 samples, is over half the 2% maximum, so both Business Owners are told the margin.
 
 **Step 4.** The definition is the one filled in under [Templates](LLM_Platform_Archetype_Framework_Templates.md). Context length is 1.2 × (18,000 + 400) = 22,080 tokens, rounded up to 32k.
 
@@ -346,8 +347,9 @@ No hosted model meets the draft floor, and the candidate does. The `code` refere
 - Its eval suites built from samples that product teams contribute are platform-owned reference sets with donated samples. Its Stage 6 capability evaluation is the pilot's acceptance test, and its Stage 10 "domain test" is the acceptance test.
 - Its "tier" is a variant. It asks for two or more products before a new archetype, where one is enough.
 - Its Stage 10 risk and legal review is the Business Owner's attestation.
-- Its Stage 8 outcome "add as fallback" is not used: no archetype has a fallback model. Its emergency replacement, without the rollback, is Forced replacement.
-- Its earlier roles map to the five here: the model review board, platform lead, Security and Legal to the Platform Owner; the platform model owner and ML evaluation team to the platform data science team; SRE to Production Engineers; product teams to the Business Owner and Developers; data governance to the Business Owner for a product's samples, and to the Platform Owner for a model's memorization and PII results.
+- Its Stage 8 outcome "add as fallback" is not used: no archetype has a fallback model. Its emergency replacement, without the rollback, is Forced replacement, which a critical-error incident can also start. Its fast track serves only a forced replacement: every other new version has a pilot and G7.
+- Its earlier roles map to the five here: the model review board, platform lead, Security and Legal to the Platform Owner; the platform model owner and ML evaluation team to the platform data science team; SRE to Production Engineers; product teams to the Business Owner and Developers; data governance to the Business Owner for a product's data, and to the Platform Owner for a model's memorization and PII results.
+- The technical implementation's example policy compares confidence intervals with the incumbent. The G5 policy here compares scores by the tie.
 
 **Planned work:** review the thresholds, including the 90-day notice period, after the first archetypes and the first version release.
 
@@ -355,12 +357,13 @@ No hosted model meets the draft floor, and the candidate does. The `code` refere
 
 - [ ] Which data science team member owns each starting archetype?
 - [ ] Which Business Owners supply the first profiles and donate the first samples, and by when?
-- [ ] Does the Platform Owner accept the two deviations from the design standard: no tiering, and no shutdown path or manual fallback?
+- [ ] Does the Platform Owner accept the deviations from the design standard: no tiering, and no kill switch or manual fallback?
 - [ ] Who approves in the Platform Owner's place when the Platform Owner proposed the change?
-- [ ] Can the Production Engineers hold capacity for two versions of every archetype through a 90-day notice period, and for a third while an end date is extended?
+- [ ] Can the Production Engineers hold capacity for two versions of every archetype through a 90-day notice period, and for a third when a release lands inside a notice period or an end date is extended?
 - [ ] Should the platform hold acceptance sets, so that it can audit them?
 - [ ] When an approved model is added to a new archetype, can its Stage 3 and Stage 4 results be reused?
 - [ ] Step 3 scores open-weight candidates before Stage 0 opens for them. Do they pass Stages 1 to 4 first?
+- [ ] How long is early-life watch, which the pilot must be through before an archetype goes active?
 - [ ] Where do the metering and safety-filter signals live?
 
 ## Feedback and history
@@ -382,4 +385,4 @@ Send feedback as an issue or pull request in `red-arg/onboard-llm`. The Platform
 | 0.11 | Nov 10, 2026 | Reduced to the platform's framework. Removed: product responsibilities and product-design refusals (products attest only to the archetype's conditions and residual risk), sample clearing, tooling, repository paths and repeated rules. Task, metric and starting-archetype tables merged |
 | 0.12 | Nov 11, 2026 | Kill switch and fallbacks removed: no kill switch, no product fallback and no fallback model. A model that must go is replaced by the next version on the fast track |
 | 0.13 | Nov 12, 2026 | Templates moved to their own document |
-| 0.14 | Nov 12, 2026 | Consistency review. Fixed: who can call a `current` version in dev, the two-version limit with variants and extended end dates, profile fields filled on joining, where gap diagnosis cases go, the fast track's reach in a forced replacement, the cold-start rules in Steps 3 and 5, and the example's figures. Both deviations from the design standard are named |
+| 0.14 | Nov 12, 2026 | Consistency review. Fixed: who can call a `current` version in dev, how many versions can serve at once, profile fields filled on joining, where gap diagnosis cases go, the reasons to release a version, a variant's first version, the fast track's reach in a forced replacement, the cold-start rules in Steps 3 and 5, and the example's figures. Both deviations from the design standard are named |
