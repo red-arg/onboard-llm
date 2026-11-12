@@ -68,7 +68,7 @@ Create a new archetype only when all of these hold:
 4. The nearest archetype's reference eval would pick the wrong model (Step 3).
 5. Suitability allows it (Step 3).
 
-Otherwise, in this order: join an existing archetype, extend it, or release a stronger model as its next version. Where no hosted model can produce the output, as before the platform hosts its first model, conditions 2 to 4 cannot be tested, and the archetype proceeds without them.
+Otherwise, in this order: join an existing archetype, extend it, or release a stronger model as its next version. Where no current version can produce the output, as before the platform's first release, conditions 2 to 4 cannot be tested, and the archetype proceeds without them.
 
 ### Steps
 
@@ -116,7 +116,7 @@ The platform data science team builds a **reference eval** once, for the capabil
 - **Judge:** pinned, internally hosted and never the candidate. It agrees with human labels on at least 85% of 50 calibration samples per slice. Judge metrics are the mean of three passes.
 - **Acceptance harness:** the scorers, judge and reference prompt, packaged for Developers to run on their own samples.
 
-The team then scores every hosted model that can produce the output, and promising open-weight candidates, on the reference set. It also takes the nearest archetype's reference-eval scores for the same hosted models. Keep every run.
+The team then scores every hosted model that can produce the output, and promising open-weight candidates, on the reference set. A hosted model is the model behind a current version. The team also takes the nearest archetype's reference-eval scores for the same hosted models. Keep every run.
 
 **Readiness check,** before the decision: the suite runs end to end offline, and a deliberately weak model scores more than a tie below the best model.
 
@@ -124,20 +124,20 @@ The first row that matches decides:
 
 | Result | Decision |
 | --- | --- |
-| No candidate beats the best hosted model by more than a tie | Not now. Redesign the workflow (gap diagnosis Step 5), and re-test at the next quarterly re-evaluation |
+| No candidate beats the best hosted model by more than a tie, with a critical-error rate no higher | Not now. Redesign the workflow (gap diagnosis Step 5), and re-test at the next quarterly re-evaluation |
 | The model the nearest archetype's reference eval ranks first is, or ties with, the best hosted model on the new reference set | The capability is not distinct. Add the reference set to that archetype as a slice (Changes), and onboard a stronger model as its next version |
 | Otherwise | Create an archetype. A capability that matches an unbuilt starting archetype builds that one |
 
-**Suitability.** Before creating an archetype or onboarding a stronger model, the archetype owner rates the likelihood that the best candidate fails the products, from two numbers:
+**Suitability.** Before creating an archetype or onboarding a stronger model, the archetype owner rates the likelihood that the best candidate fails the products. The best candidate is the highest-scoring one that beats the best hosted model by more than a tie, with a critical-error rate no higher. The rating rests on two numbers:
 
 - **Lead:** the candidate's margin over the best hosted model on the reference set.
 - **Shortfall:** the largest gap, among the products, between a product's floor and the best score a hosted model reached on its acceptance set.
 
 | Likelihood | When | Decision |
 | --- | --- | --- |
-| Low | The lead is more than a tie above the shortfall, and the candidate's critical-error rate is no higher than the best hosted model's | Proceed |
+| Low | The lead is more than a tie above the shortfall | Proceed |
 | Medium | Anything else | Proceed. Tell each Business Owner the lead and the shortfall, and record them as a known weakness in the routing guide |
-| High | The lead is more than a tie below the shortfall, or the candidate's critical-error rate is higher than the best hosted model's | Not now |
+| High | The lead is more than a tie below the shortfall | Not now |
 
 Where no hosted model can produce the output, there is nothing to compare a candidate with. Build the reference eval, record the decision to create the archetype in the step record, treat the likelihood as medium and tell each Business Owner that nothing was compared. The weak-model check waits for the first candidate's Stage 5 benchmark.
 
@@ -177,15 +177,15 @@ The archetype owner and a second data science team member approve. Any product c
 
 Release a new version only when a candidate:
 
-- beats the current version on the reference eval by more than a tie;
+- beats the current version on the reference set by more than a tie;
 - ties with it at a clearly lower cost or latency; or
 - replaces a model that must go, because of a vulnerability, a license change or the end of upstream support.
 
 **G5 policy.** One policy selects the model for every version, on the reference eval at Stage 5:
 
 - **Hard criteria:** on the reference set, the candidate scores no more than a tie below the current version, and its critical-error rate is no higher.
-- **First version of an archetype:** the best hosted model stands in for the current version, and the candidate beats it by more than a tie (Step 3). Where no hosted model can produce the output, there is no comparison and candidates are only ranked.
-- **First version of a variant:** there is no comparison. The candidate meets the variant's offer, and the product that needs the variant passes its acceptance test on it.
+- **First version of an archetype:** the best hosted model at Step 3 stands in for the current version, and the candidate beats it by more than a tie. Where Step 3 had nothing to compare, candidates are only ranked.
+- **First version of a variant:** there is no comparison. The candidate meets the variant's offer, and the product that needs the variant runs its acceptance test on it at Stage 6, as the pilot.
 - **For review:** the regression slice score, and latency and cost against the offer.
 - **Ranking:** candidates that pass are ranked by reference-set score.
 - **Known weakness:** a version that scores below the one it replaces has that recorded in the routing guide.
@@ -204,7 +204,7 @@ The policy sets no absolute floor. Whether a version is good enough for a produc
 
 | Diagnosis | Action |
 | --- | --- |
-| Prompt problem | The product adopts the improved prompt and moves |
+| Prompt problem | The product adopts the optimized prompt and moves |
 | Catalog gap | The failing cases the Business Owner donates join the regression slice, and Stage 0 opens for a model that passes them. The Platform Owner extends the old version's end date once, by one notice period |
 | Beyond current models | The product redesigns its workflow (gap diagnosis Step 5), or leaves at the end date |
 
@@ -238,7 +238,6 @@ Severity 1: act the same day. Severity 2: within two weeks. Severity 3: at the n
 | --- | --- | --- | --- |
 | A product reports a critical-error incident | 1 | Forced replacement if the model is at fault; review within 5 working days; donated cases join the regression slice | Business Owner, Production Engineers, archetype owner |
 | A product reports quality below its floor | 2 | Gap diagnosis, then Step 3 if it finds a catalog gap | Archetype owner |
-| A re-evaluation shows a candidate more than a tie above the current version | 2 | Open Stage 0 for the next version | Archetype owner |
 | A product in scope fails its acceptance test on a version that passed the reference eval | 2 | Gap diagnosis; if the model is at fault, donated cases join the regression slice, and every serving version is re-run | Archetype owner |
 | A product has not moved 30 days before an end date | 2 | Tell its Business Owner | Archetype owner |
 | Red-team success is higher than in the last round | 2 | Add the payloads to the held-out set; tell the Business Owners | Platform data science team |
@@ -301,7 +300,7 @@ Gap diagnosis finds a catalog gap: an optimized prompt lifts the best hosted sco
 | M3 (behind `agents-v1`) | 0.64 | 0.70 |
 | Open-weight candidate | not run | 0.87 |
 
-The candidate beats the best hosted model, M2, by 15 points: more than a tie. The code assistance eval ranks M1 first, but M1 is 15 points below M2 on the reference set: create an archetype. Likelihood is medium, because the 15-point lead is within a tie of the largest shortfall, the finance tool's 15 points (0.85 against 0.70), so both Business Owners are told the lead and the shortfall.
+The candidate beats the best hosted model, M2, by 15 points, more than a tie, and its 2% critical-error rate is no higher than M2's. The code assistance eval ranks M1 first, but M1 is 15 points below M2 on the reference set: create an archetype. Likelihood is medium, because the 15-point lead is within a tie of the largest shortfall, the finance tool's 15 points (0.85 against 0.70), so both Business Owners are told the lead and the shortfall.
 
 **Step 4.** The definition is the one filled in under [Templates](LLM_Platform_Archetype_Framework_Templates.md). Context length is 1.2 × (18,000 + 400) = 22,080 tokens, rounded up to 32k.
 
@@ -320,7 +319,7 @@ The candidate beats the best hosted model, M2, by 15 points: more than a tie. Th
 **Differences from the companion documents,** where this document takes precedence:
 
 - The onboarding process swaps models behind a fixed alias, by shadow traffic, canary and cutover at Stage 11. This document releases a new versioned alias with a notice period and a product-run acceptance test. The technical implementation's examples still use `rag-default`.
-- Its eval suites combine public benchmarks with domain samples from product teams. The reference eval here uses public datasets only, and products donate cases only to the regression slice. Its Stage 10 "domain test" is the acceptance test.
+- Its eval suites combine public benchmarks with domain samples from product teams. The reference set here is public datasets only, and products donate cases only to the regression slice. Its Stage 10 "domain test" is the acceptance test.
 - Its G5 scores a model against the archetype's requirements and weights domain slices above public benchmarks. The G5 policy here is relative, and a product's own bar is checked only by its acceptance test.
 - Its "tier", such as `rag-large`, is a variant. It asks for two or more products before a new archetype, where one is enough.
 - Its Stage 10 risk and legal review is the Business Owner's attestation.
