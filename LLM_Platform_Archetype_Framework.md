@@ -1,6 +1,6 @@
 # LLM Platform: Archetype Framework
 
-Version 0.13 · Nov 12, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
+Version 0.14 · Nov 12, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
 ## Purpose
 
@@ -12,16 +12,14 @@ The platform serves models through archetypes. An archetype is a capability the 
 | Decides | Which model each version serves, and when a new archetype is needed | Whether a version is good enough for its use |
 | When a model changes | Releases a new version beside the old one, with notice | Re-runs its acceptance test and moves before the end date |
 
-Every archetype gets the same checks and every version the same release, whatever products do with the output. This deviates from the [design standard](Framework_Design_Standard_for_AI_Software_and_Product.md), which tiers obligations by risk: obligations that vary with product risk belong to the Business Owner. It also keeps no kill switch and no manual fallback: a model that must go is replaced by the next version (Forced replacement).
-
-Repositories, pipelines and tooling are in the [technical implementation](LLM_Platform_Model_Onboarding_Technical_Implementation.md).
+Every archetype gets the same checks and every version the same release, whatever products do with the output.
 
 ## Roles
 
 | Role | Responsibilities |
 | --- | --- |
-| Business Owner (owns the product) | Approves the product's profiles; signs each acceptance result; donates samples to reference sets; attests to the archetype's conditions and accepts its residual risk; reconfirms profiles yearly |
-| Developers (build the product) | Write profiles and label the acceptance set; run the acceptance test on joining and on each new version; move the product within the notice period; report incidents; label live outputs during a pilot |
+| Business Owner (owns the product) | Approves the product's profiles; signs each acceptance result; donates samples to reference sets; attests to the archetype's conditions and accepts its residual risk |
+| Developers (build the product) | Write profiles and label the acceptance set; run the acceptance test on joining and on each new version; move the product within the notice period; report incidents |
 | Platform Owner | Approves new archetypes, variants, major changes, retirements and end-date extensions; names archetype owners; audits the catalog and its records each quarter; keeps this document current |
 | Platform data science team | Owns the reference evals and the acceptance harness; runs capability tests, re-evaluations, label audits and red-team rounds |
 | Production Engineers (platform engineers) | Run the gateway and the versioned aliases: credentials, metering, alerts, and capacity for two versions through each notice period |
@@ -36,13 +34,12 @@ Every alias names one version of one archetype: `<id>-v<n>`, such as `rag-v2`. A
 
 | Status | Meaning | Who can call it |
 | --- | --- | --- |
-| `dev` | Serving in the dev environment after G8 | Products running their acceptance test |
+| `dev` | Serving in the dev environment | Products running their acceptance test |
 | `current` | The version new products join | Products whose acceptance test passed on it |
 | `deprecated` | Still serving, with its end date announced | Products already on it, until the end date |
 | `retired` | Removed from serving | Nobody |
 
-- **No floating alias.** A product names its version in its profile and its code.
-- **Notice period:** 90 days, from the new version's GA to the old version's end date.
+- **Notice period:** 90 days, from the new version to the old version's end date.
 - **At most two versions serve in production** per archetype: one current and one deprecated.
 - **Embeddings:** vectors from different versions cannot share an index, so products re-index within the notice period.
 - **No reuse.** Ids and version numbers are never reused.
@@ -56,13 +53,8 @@ A starting archetype has its id and owner set from the start. It is built, throu
 | `answer` (`prose`) | Answer questions from sources the product sends | Answer correctness, faithfulness | A claim the sources do not support | `rag` |
 | `condense` (`prose`) | Summarize content | Key-point coverage, faithfulness | A statement the source does not support | `summarization` |
 | `extract` (`json`) | Pull fields or labels out of content | Field-level F1 | A wrong value in a field marked critical | `extraction` |
-| `compose` (`prose`) | Draft or rewrite text | Rubric score from a judge | A fact or promise the instructions do not allow | None |
 | `code` (`code`) | Write, complete or fix code | pass@1 on unit tests | Insecure or destructive code | `code` |
-| `code` (`query`) | Write one executable statement, such as SQL | Execution accuracy | A query that returns the expected shape but wrong values | None |
-| `act` (`tool-calls`) | Choose and call tools | Task success | An action the task did not ask for, or one taken without a required confirmation | `agents` |
-| `translate` (`prose`) | Translate between languages | chrF++ or COMET | A changed number, name or negation | `multilingual` |
 | `embed` (`vector`) | Turn text into vectors for search | nDCG@10 | n/a | `embeddings` |
-| `rank` (`score`) | Rerank search results | nDCG@10 | n/a | None |
 
 ## Creating an archetype
 
@@ -93,17 +85,16 @@ The archetype's status is `proposed` once Step 3 decides to create it, `pilot` a
 
 ### Step 1. Profile
 
-The Developers fill in one profile per use case (Templates), with an acceptance set of at least 100 labeled samples from its real or planned work. The Business Owner approves it.
+The Developers fill in one profile per use case (Templates), with an acceptance set of labeled samples from its real or planned work. The Business Owner approves it.
 
 - **One task per profile.** A use case with two tasks is two profiles and calls two aliases.
 - **The acceptance set stays with the product.** The platform holds only the samples a Business Owner donates to a reference set.
-- **Critical errors:** the Business Owner sets `max_critical_errors`. As a guide, 1% where no person checks each output, and 3% otherwise.
-- **Untrusted content** (customer messages, emails, uploads, outside documents): the acceptance set adds at least 20 injection samples, written with the data science team, on which following an injected instruction is a critical error.
-- **Complete** when every field is filled, every sample has an expected output, and two labelers agree on 27 of 30 samples.
+- **Untrusted content** (customer messages, emails, uploads, outside documents): the acceptance set adds additional set of injection samples, vetted by the data science team, on which following an injected instruction is a critical error.
+- **Complete** when every field is filled, every sample has an expected output.
 
 ### Step 2. Fit check and acceptance test
 
-The owner of the nearest archetype, by task and output, compares the profile with the existing archetypes. A use case that needs the model itself to hold tools or network access is refused: tools live in products.
+The owner of the nearest archetype, by task and output, compares the profile with the existing archetypes.
 
 | The use case | Outcome |
 | --- | --- |
@@ -113,19 +104,17 @@ The owner of the nearest archetype, by task and output, compares the profile wit
 
 **The acceptance test.** The Developers run it in dev with the platform's acceptance harness: the scorers, pinned judge and reference prompt of the archetype's reference eval, with the metric for the product's task. It passes when the score meets the product's floor and the critical-error rate is within its maximum. The Business Owner signs the acceptance record (Templates). The platform records it at Stage 10 and does not re-run it.
 
-**Joining.** At Stage 10 the Business Owner attests to the archetype's conditions and accepts its residual risk, and the product gets credentials for that version only. The reference eval does not measure a product that joins outside the scope, so the next version may not serve it.
-
 ### Step 3. Capability test
 
-The platform data science team builds a **draft set** for the capability, not for the product: at least 100 labeled samples, plus at least 20 injection samples. Samples are:
+The platform data science team builds a **draft set** for the capability, not for the product: a set of labeled samples, plus a set of injection samples. Samples are:
 
 - written by the team;
 - adapted from public datasets;
-- donated by products and re-labeled by the team, after which they are the platform's. No product supplies more than half the set. If gap diagnosis sent the use case here, the donation includes failing cases.
+- donated by products and re-labeled by the team, after which they are the platform's.
 
 The **draft floor** and critical-error maximum are the highest floor and the lowest maximum among the profiles in hand.
 
-The team scores every hosted model that can produce the output, and promising open-weight candidates, on the draft set, each with an improved prompt (gap diagnosis Step 2). It also takes the nearest archetype's reference-eval scores for the same hosted models. Scores within 5 points of each other are a **tie**. Keep every run.
+The team scores every hosted model that can produce the output, and promising open-weight candidates, on the draft set, each with an improved prompt. It also takes the nearest archetype's reference-eval scores for the same hosted models. Keep every run.
 
 The first row that matches decides:
 
@@ -158,13 +147,6 @@ The archetype owner writes the definition (Templates):
 - **Risks:** at least one archetype-specific risk, each with a control, a test and an owner. At least one is an attack.
 - **Residual risk:** what is left after controls, and why it is acceptable.
 
-| Offer | Starting value |
-| --- | --- |
-| Latency | The strictest latency class among the profiles |
-| Context length | 1.2 × the largest (input p95 + output p95), rounded up to 8k, 16k, 32k, 64k or 128k |
-| Languages | Every language a profile needs, each with its own reference slice |
-| Cost target | The lowest target, where profiles gave one |
-
 The Platform Owner approves, with conditions if needed.
 
 **Variants.** If one product needs a much faster or cheaper model than the rest, the Platform Owner can approve a variant, such as `<id>-fast-v<n>`. A variant has its own offer and line of versions, and shares the archetype's scope and reference eval.
@@ -173,11 +155,11 @@ The Platform Owner approves, with conditions if needed.
 
 The platform data science team builds:
 
-- **Reference set:** the draft set, grown to at least 200 samples before the first model's Stage 5 benchmark, under the Step 3 sourcing rules and the Step 1 label check. Each extra language has its own slice of 50 to 100 samples.
+- **Reference set:** the draft set, grown to more samples before the first model's Stage 5 benchmark, under the Step 3 sourcing rules and the Step 1 label check.
 - **Regression slice:** cases from incidents and gap diagnoses, added as they occur. Its score goes to review at G5 and is not a hard criterion.
 - **Reference prompt:** one, starting from the improved prompt used in Step 3.
 - **Safety:** the standard safety battery, plus injection tests through every kind of content the scope takes, and tests for the archetype's critical errors. A held-out injection set is kept away from Developers, and a red-team round runs each year. Embedding and ranking archetypes have no injection tests.
-- **G5 policy:** the reference floor and the critical-error maximum are hard criteria, on the reference set and on each language slice. A later version must not score below the current version by more than a tie. A pass within a tie of the floor is recorded as a known weakness in the routing guide. Latency and cost go to review against the offer. Models that pass are ranked by reference-set score, with public benchmarks, if used, at no more than 20%.
+- **G5 policy:** the reference floor and the critical-error maximum are hard criteria, on the reference set. A later version must not score below the current version by more than a tie. A pass within a tie of the floor is recorded as a known weakness in the routing guide. Latency and cost go to review against the offer. Models that pass are ranked by reference-set score, with public benchmarks, if used, at no more than 20%.
 - **Judge:** pinned, internally hosted and never the candidate. It agrees with human labels on at least 85% of 50 calibration samples per slice. Judge metrics are the mean of three passes.
 - **Acceptance harness:** the scorers, judge and reference prompt, packaged for Developers to run on their own samples.
 
@@ -197,7 +179,7 @@ The archetype goes active when:
 
 - the first model is GA as `<id>-v1`, with status `current`;
 - the pilot is through early-life watch;
-- the pilot's acceptance score is inside the 95% Wilson interval of its live score, on at least 50 labeled live outputs;
+- the pilot's acceptance score is inside the 95% Wilson interval of its live score, on a set of labeled live outputs;
 - no severity 1 or 2 signal is open;
 - the routing guide entry is published: scope, out of scope, offer, conditions, known weaknesses and version 1's reference scores.
 
@@ -379,3 +361,4 @@ Send feedback as an issue or pull request in `red-arg/onboard-llm`. The Platform
 | 0.11 | Nov 10, 2026 | Reduced to the platform's framework. Removed: product responsibilities and product-design refusals (products attest only to the archetype's conditions and residual risk), sample clearing, tooling, repository paths and repeated rules. Task, metric and starting-archetype tables merged |
 | 0.12 | Nov 11, 2026 | Kill switch and fallbacks removed: no kill switch, no product fallback and no fallback model. A model that must go is replaced by the next version on the fast track |
 | 0.13 | Nov 12, 2026 | Templates moved to their own document |
+| 0.14 | Nov 12, 2026 | Simplification |
