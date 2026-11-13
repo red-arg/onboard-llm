@@ -9,7 +9,7 @@ The platform serves models through archetypes. An archetype is a capability the 
 | | The platform | The product |
 | --- | --- | --- |
 | Owns | The archetype, its reference eval and its versions | Its acceptance test (its own samples and floor) and how it uses the output |
-| Decides | Which model each version serves, and when a new archetype is needed | Whether a version is good enough for its use |
+| Decides | Which model each version serves, and when a new archetype is needed | Which archetype it joins, and whether a version is good enough for its use |
 | When a model changes | Releases a new version beside the old one, with notice | Re-runs its acceptance test and moves before the end date |
 
 Every archetype gets the same checks and every version the same release, whatever products do with the output.
@@ -19,12 +19,12 @@ Every archetype gets the same checks and every version the same release, whateve
 | Role | Responsibilities |
 | --- | --- |
 | Business Owner (owns the product) | Approves the product's profiles; signs each acceptance result; donates cases to regression slices; attests to the archetype's conditions and accepts its residual risk |
-| Developers (build the product) | Write profiles and label the acceptance set; run the acceptance test on joining and on each new version; move the product within the notice period; report incidents |
+| Developers (build the product) | Write profiles and label the acceptance set; choose the archetype; run the acceptance test on joining and on each new version; move the product within the notice period; report incidents |
 | Platform Owner | Approves new archetypes, variants, major changes, retirements and end-date extensions; names archetype owners; audits the catalog and its records each quarter; keeps this document current |
-| Platform data science team | Owns the reference evals and the acceptance harness; runs capability tests, re-evaluations, label audits and red-team rounds |
+| Platform data science team | Owns the reference evals and the acceptance harness; runs gap diagnoses, capability tests, re-evaluations, label audits and red-team rounds |
 | Production Engineers (platform engineers) | Run the gateway and the versioned aliases: credentials, metering, alerts, and capacity for two versions through each notice period |
 
-Each archetype has an **archetype owner**, a named member of the platform data science team, who runs fit checks, writes the definition, proposes pilots, sends release notices, runs the quarterly review and acts on signals.
+Each archetype has an **archetype owner**, a named member of the platform data science team, who advises products on their choice of archetype, records scope, writes the definition, proposes pilots, sends release notices, runs the quarterly review and acts on signals.
 
 Whoever proposes an archetype or a candidate model does not decide its Step 3 test or approve it at Step 4.
 
@@ -63,7 +63,7 @@ Create a new archetype only when all of these hold:
 
 1. At least one product needs it, live or planned within two quarters, with a named owner.
 2. The use case is in no built archetype's scope (Step 2).
-3. No current version passes that product's acceptance test, and gap diagnosis finds a catalog gap (Step 2).
+3. The product's acceptance test fails, and gap diagnosis finds a catalog gap (Step 2).
 4. A candidate model beats every hosted model on the reference set by more than a tie, with a critical-error rate no higher (Step 3).
 5. Suitability allows it (Step 3).
 
@@ -74,7 +74,7 @@ Otherwise, in this order: join an existing archetype, extend it, or release a st
 | Step | Who | Done when |
 | --- | --- | --- |
 | 1. Profile | Developers; Business Owner approves | Profile complete |
-| 2. Fit check and acceptance test | Nearest archetype's owner; Developers run the test | Outcome recorded |
+| 2. Choose an archetype and test | Developers; the archetype's owner advises and records scope | Outcome recorded |
 | 3. Capability test and reference eval | Platform data science team | Readiness check passed; decision and suitability recorded |
 | 4. Define and approve | Archetype owner; Platform Owner approves | Definition approved |
 | 5. Pilot and release version 1 | Archetype owner | Go-active criteria met |
@@ -90,19 +90,25 @@ The Developers fill in one profile per use case (Templates), with an acceptance 
 - **Untrusted content** (customer messages, emails, uploads, outside documents): the acceptance set adds a set of injection samples, vetted by the data science team, on which following an injected instruction is a critical error.
 - **Complete** when every field is filled and every sample has an expected output.
 
-### Step 2. Fit check and acceptance test
+### Step 2. Choose an archetype and test
 
-The owner of the nearest archetype, by task and output, compares the profile with the existing archetypes.
+The Developers choose the archetype that fits the profile, from the routing guide entries: scope, out of scope, offer, conditions and known weaknesses. The archetype's owner advises if asked, and records in the step record whether the use case is in the archetype's scope.
 
-| The use case | Outcome |
+A use case in scope that needs another language, a longer context or a stricter latency class first has the archetype extended (Changes), or a variant added (Step 4).
+
+The Developers then run the acceptance test on the archetype's current version.
+
+| Result | Outcome |
 | --- | --- |
-| Is in a built archetype's scope and offer | The Developers run the acceptance test on its current version. Pass: join through Stage 10. Fail: run gap diagnosis, and close a catalog gap with the archetype's next version (Releasing a new version) |
-| Is in scope, but needs another language, a longer context or a stricter latency class | Extend the archetype (Changes), or add a variant (Step 4), then run the acceptance test |
-| Is in no built archetype's scope | The Developers run the acceptance test on the current versions that can produce the output, nearest first. Pass: join that version; the archetype's scope does not change. No pass: run gap diagnosis, and go to Step 3 if it finds a catalog gap |
+| Pass | Join through Stage 10. Joining from outside the scope does not change the scope |
+| Fail, in scope | Gap diagnosis. Close a catalog gap with the archetype's next version (Releasing a new version) |
+| Fail, outside the scope | Gap diagnosis. Go to Step 3 if it finds a catalog gap |
 
-Where no current version can produce the output, there is nothing to test or diagnose, and the use case goes to Step 3.
+Where no current version can produce the output, there is nothing to choose or test, and the use case goes to Step 3.
 
-**The acceptance test.** The Developers run it in dev with the platform's acceptance harness: the scorers, pinned judge and reference prompt of the archetype's reference eval, with the metric for the product's task. It passes when the score meets the product's floor and the critical-error rate is within its maximum. The Business Owner signs the acceptance record (Templates). The platform records it at Stage 10 and does not re-run it.
+**The acceptance test.** The Developers run it themselves, in dev, on their own acceptance set. In scope, they use the platform's acceptance harness: the scorers, pinned judge and reference prompt of the archetype's reference eval. Outside the scope, they score with their own method, and the acceptance record says so. The test passes when the score meets the product's floor and the critical-error rate is within its maximum. The Business Owner signs the acceptance record (Templates). The platform records it at Stage 10 and does not re-run it.
+
+**Gap diagnosis** is the platform's check on a fail. The data science team scores the product's samples on the best hosted model before anything is built. If another archetype's model passes, the product joins that archetype instead.
 
 ### Step 3. Capability test and reference eval
 
@@ -129,7 +135,7 @@ The result decides:
 **Suitability.** Before creating an archetype, the archetype owner rates the likelihood that the best candidate fails the products. The best candidate is the highest-scoring one that beats the best hosted model by more than a tie, with a critical-error rate no higher. The rating rests on two numbers:
 
 - **Lead:** the candidate's margin over the best hosted model on the reference set.
-- **Shortfall:** the largest gap, among the products, between a product's floor and the best score a hosted model reached on its acceptance set.
+- **Shortfall:** the largest gap, among the products, between a product's floor and the best score a hosted model reached on its acceptance set in gap diagnosis.
 
 | Likelihood | When | Decision |
 | --- | --- | --- |
@@ -282,7 +288,9 @@ The products and numbers are illustrative.
 | Floor / critical-error maximum | 0.85 / 3% | 0.85 / 2% |
 | Cost target per 1,000 requests | $20 | $30 |
 
-**Step 2.** No built archetype has `code` / `query` in scope. No current version that can write a query reaches 0.85 on either acceptance set.
+**Step 2.** No built archetype has `code` / `query` in scope. On its owner's advice both products choose `code`, the nearest archetype, and the owner records the use case as outside its scope. They run their acceptance tests on `code-v2` with their own scoring, and fail: 0.55 and 0.50 against a floor of 0.85.
+
+Gap diagnosis scores both acceptance sets on every hosted model that can write a query:
 
 | Version | Analytics | Finance |
 | --- | --- | --- |
@@ -290,7 +298,7 @@ The products and numbers are illustrative.
 | `rag-large-v1` | 0.71 | 0.66 |
 | `agents-v1` | 0.69 | 0.67 |
 
-Gap diagnosis finds a catalog gap: an optimized prompt lifts the best hosted score to 0.74 on the analytics set and 0.70 on the finance set, and only the reference model passes. The use case goes to Step 3.
+An optimized prompt lifts the best hosted score to 0.74 on the analytics set and 0.70 on the finance set, and only the reference model passes: a catalog gap. The use case goes to Step 3.
 
 **Step 3.** The reference set is two public text-to-SQL datasets, one English and one German, each pinned at a revision, with one score over both. The team adds injection tests through column comments and row values, and tests for destructive statements. One open-weight candidate passes the legal and security reviews and is run with the hosted models. A small internal model scores 0.31, more than a tie below every other model.
 
@@ -313,7 +321,7 @@ The candidate beats the best hosted model, M2, by 15 points, more than a tie, an
 
 **Done by hand until automated:**
 
-- Acceptance tests: the data science team runs them with each product's Developers.
+- Acceptance harness: until it is packaged, the data science team hands its scorers to each product's Developers.
 - Records, attestations and approver checks: collected and checked in pull-request review by the archetype owner and the Platform Owner.
 - Per-version credentials, end dates and yearly lapses: the Production Engineers retire versions by hand, and the quarterly review tracks unconfirmed profiles.
 
@@ -362,4 +370,4 @@ Send feedback as an issue or pull request in `red-arg/onboard-llm`. The Platform
 | 0.12 | Nov 11, 2026 | Kill switch and fallbacks removed: no kill switch, no product fallback and no fallback model. A model that must go is replaced by the next version on the fast track |
 | 0.13 | Nov 12, 2026 | Templates moved to their own document |
 | 0.14 | Nov 12, 2026 | Simplification |
-| 0.15 | Nov 13, 2026 | Reference evals built once from public datasets and iterated over time: the capability test and the reference eval are one step, and the steps go from six to five. One reference-set score and a relative G5 policy, with the safety bar required, replace the reference floor and critical-error maximum, so a product's own bar is checked only by its acceptance test. A new archetype is only for a use case in no built archetype's scope; a catalog gap inside a scope is closed by the next version. Candidates pass the legal and security reviews before they are run. The caps on public benchmarks and on serving versions are removed |
+| 0.15 | Nov 13, 2026 | Reference evals built once from public datasets and iterated over time: the capability test and the reference eval are one step, and the steps go from six to five. One reference-set score and a relative G5 policy, with the safety bar required, replace the reference floor and critical-error maximum, so a product's own bar is checked only by its acceptance test. A new archetype is only for a use case in no built archetype's scope; a catalog gap inside a scope is closed by the next version. Products choose their archetype and run their own acceptance test. Candidates pass the legal and security reviews before they are run. The caps on public benchmarks and on serving versions are removed |

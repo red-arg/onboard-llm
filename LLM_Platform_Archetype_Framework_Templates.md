@@ -72,7 +72,7 @@ residual_risk:
 
 ```yaml
 archetype: text-to-sql
-step: 3                               # 2 fit check | 3 capability test | 4 approval | 5 go active
+step: 3                               # 2 choice and test | 3 capability test | 4 approval | 5 go active
 decided_by: <user>                    # not the proposer
 decided_at: 2026-11-20
 inputs: [<profiles@commit>, <suite version>, <every run, failed runs included>]
@@ -87,7 +87,7 @@ reason: <a few sentences>
 ```yaml
 profile: <profile@commit>
 alias: text-to-sql-v2
-harness: text-to-sql/v1               # the suite version
+harness: text-to-sql/v1               # the suite version; "own method" outside the scope
 samples: { count: 100, injection: 20, commit: <commit> }
 prompt: <product prompt@commit>
 result: { execution_accuracy: 0.90, critical_errors: 0.01 }
