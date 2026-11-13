@@ -14,15 +14,15 @@ use_case: <what the product asks the model to do, in one line>
 status: live                          # live | planned, with the quarter
 task: answer
 output: prose
+latency: interactive                  # real-time (first token within 300 ms) | interactive (1.5 s) | batch
+lengths: { input_p95: 9000, output_p95: 600 }             # tokens
 untrusted_content: yes                # adds injection samples to the acceptance set
 acceptance: { metric: answer_correctness, floor: 0.85, max_critical_errors: 0.03 }
 samples: <at least 100 labeled samples, kept by the product>
-approved: <Business Owner, date>      # the use case, acceptance set and floor
+approved: <Business Owner, date>      # the use case, needs, acceptance set and floor
 
 # At joining (Stage 10)
 alias: rag-v1                         # the version the product calls
-latency: interactive                  # real-time (first token within 300 ms) | interactive (1.5 s) | batch
-lengths: { input_p95: 9000, output_p95: 600 }             # tokens
 volume: { requests_per_day: 5000, peak_per_minute: 40 }
 languages: [en]
 cost_target_per_1k: <amount, if known>

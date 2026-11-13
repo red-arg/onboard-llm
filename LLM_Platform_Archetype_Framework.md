@@ -83,16 +83,17 @@ The archetype's status is `proposed` once Step 3 decides to create it, `pilot` o
 
 ### Step 1. Use case and acceptance set
 
-The Developers talk to the platform data science team about what the platform offers and which archetype could fit. Needs that an archetype may not cover, such as a language, a long context or strict latency, are raised here.
+The Developers talk to the platform data science team about what the platform offers and which archetype could fit.
 
-They then start the profile (Templates), writing down only what the test needs:
+They then start the profile (Templates), writing down only what the choice and the test need:
 
 - **Use case, task and output.** One task per profile: a use case with two tasks is two profiles and calls two aliases.
+- **Needs:** the latency class, and the input and output lengths.
 - **Acceptance set:** labeled samples from its real or planned work, each with an expected output. It stays with the product. The platform holds only the cases a Business Owner donates to a regression slice.
 - **Metric, floor and critical-error maximum,** set before the test runs.
 - **Untrusted content** (customer messages, emails, uploads, outside documents): the acceptance set adds a set of injection samples, vetted by the data science team, on which following an injected instruction is a critical error.
 
-The Business Owner approves the profile so far. The rest of it is completed when the product joins (Step 2). Where the use case goes to Step 3, its needs (latency, lengths, languages and cost target) are added first, because the reference eval and the offer are built from them.
+The Business Owner approves the profile so far. The rest of it is completed when the product joins (Step 2). Where the use case goes to Step 3, its languages and cost target are added first, because the reference eval and the offer are built from them.
 
 ### Step 2. Choose an archetype and test
 
@@ -110,9 +111,9 @@ The Developers then run the acceptance test on the archetype's current version.
 
 Where no current version can produce the output, there is nothing to choose or test, and the use case goes to Step 3.
 
-**The acceptance test.** The Developers run it themselves, in dev, on their own acceptance set. In scope, they use the platform's acceptance harness: the scorers, pinned judge and reference prompt of the archetype's reference eval. Outside the scope, they score with their own method, and the acceptance record says so. The test passes when the score meets the product's floor and the critical-error rate is within its maximum. The Business Owner signs the acceptance record (Templates). The platform records it at Stage 10 and does not re-run it.
+**The acceptance test.** The Developers run it themselves, in dev, on their own acceptance set. In scope, they use the platform's acceptance harness: the scorers, pinned judge and reference prompt of the archetype's reference eval. Outside the scope, they score with their own method, and the acceptance record says so. The test passes when the score meets the product's floor and the critical-error rate is within its maximum. When a product's scoring method changes, as when it moves from its own method to a new archetype's harness, the Business Owner re-approves the floor first. The Business Owner signs the acceptance record (Templates). The platform records it at Stage 10 and does not re-run it.
 
-**Joining.** The acceptance test is the first part of Stage 10. After a pass, the Developers complete the profile with the alias, latency, lengths, volume, languages and cost target. The archetype's owner checks it against the offer, and a need the offer does not cover is handled by an extension or a variant before the product goes live. The Business Owner attests to the archetype's conditions and accepts its residual risk.
+**Joining.** The acceptance test is the first part of Stage 10. After a pass, the Developers complete the profile with the alias, volume, languages and cost target. The archetype's owner checks it against the offer, and a need the offer does not cover is handled by an extension or a variant before the product goes live. The Business Owner attests to the archetype's conditions and accepts its residual risk.
 
 **Gap diagnosis** is the platform's check on a fail. The data science team scores the product's samples, with its Developers, on the hosted models before anything is built. If another archetype's model passes, the product may join that archetype instead, from outside its scope.
 
@@ -283,7 +284,7 @@ The profile, definition, step record, acceptance record and release notice templ
 
 The products and numbers are illustrative.
 
-**Step 1.** Two products talk to the data science team and start `code` / `query` profiles, each with 100 acceptance samples plus 20 injection samples, because row values and column comments can hold customer text. They set their floors and raise these needs:
+**Step 1.** Two products talk to the data science team and start `code` / `query` profiles, each with 100 acceptance samples plus 20 injection samples, because row values and column comments can hold customer text. They set their floors and state these needs:
 
 | | Analytics assistant | Finance reporting |
 | --- | --- | --- |
@@ -304,7 +305,7 @@ Gap diagnosis scores both acceptance sets on every hosted model that can write a
 | `rag-large-v1` | 0.71 | 0.66 |
 | `agents-v1` | 0.69 | 0.67 |
 
-An optimized prompt lifts the best hosted score to 0.74 on the analytics set and 0.70 on the finance set, and only the reference model passes: a catalog gap. The use case goes to Step 3, so both products add their needs to their profiles.
+An optimized prompt lifts the best hosted score to 0.74 on the analytics set and 0.70 on the finance set, and only the reference model passes: a catalog gap. The use case goes to Step 3, so both products add their languages and cost targets to their profiles.
 
 **Step 3.** The reference set is two public text-to-SQL datasets, one English and one German, each pinned at a revision, with one score over both. The team adds injection tests through column comments and row values, and tests for destructive statements. One open-weight candidate passes the legal and security reviews and is run with the hosted models. A small internal model scores 0.31, more than a tie below every other model.
 
@@ -381,4 +382,4 @@ Send feedback as an issue or pull request in `red-arg/onboard-llm`. The Platform
 | 0.14 | Nov 12, 2026 | Simplification |
 | 0.15 | Nov 13, 2026 | Reference evals built once from public datasets and iterated over time: the capability test and the reference eval are one step, and the steps go from six to five. One reference-set score and a relative G5 policy, with the safety bar required, replace the reference floor and critical-error maximum, so a product's own bar is checked only by its acceptance test. A new archetype is only for a use case in no built archetype's scope; a catalog gap inside a scope is closed by the next version. Products choose their archetype and run their own acceptance test. Candidates pass the legal and security reviews before they are run. The caps on public benchmarks and on serving versions are removed |
 | 0.16 | Nov 13, 2026 | Step 1 reduced to a conversation with the data science team and the acceptance set with its floor. The rest of the profile is completed when the product joins |
-| 0.17 | Nov 13, 2026 | Coherence fixes: the completed profile is checked against the offer at joining; a use case that goes to Step 3 adds its needs first; the safety bar applies to the first archetype; joining is no longer listed as a change the archetype owner approves |
+| 0.17 | Nov 13, 2026 | Step 1 also records the latency class and lengths, and the Business Owner re-approves the floor when the scoring method changes. Coherence fixes: the completed profile is checked against the offer at joining; a use case that goes to Step 3 completes its needs first; the safety bar applies to the first archetype; joining is no longer listed as a change the archetype owner approves |
