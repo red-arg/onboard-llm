@@ -1,26 +1,30 @@
 # LLM Platform: Archetype Framework Templates
 
-Version 0.15 · Nov 13, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
+Version 0.16 · Nov 13, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
-The templates for the records the [archetype framework](LLM_Platform_Archetype_Framework.md) asks for: the profile (Step 1), the definition (Step 4), the step record, the acceptance record and the release notice. They are versioned with the framework.
+The templates for the records the [archetype framework](LLM_Platform_Archetype_Framework.md) asks for: the profile (started at Step 1, completed at joining), the definition (Step 4), the step record, the acceptance record and the release notice. They are versioned with the framework.
 
 **Profile**
 
 ```yaml
+# Step 1, before the test
 product: <product>
 owner: <Business Owner>
 use_case: <what the product asks the model to do, in one line>
 status: live                          # live | planned, with the quarter
 task: answer
 output: prose
+untrusted_content: yes                # adds injection samples to the acceptance set
+acceptance: { metric: answer_correctness, floor: 0.85, max_critical_errors: 0.03 }
+samples: <at least 100 labeled samples, kept by the product>
+approved: <Business Owner, date>      # the use case, acceptance set and floor
+
+# At joining (Stage 10)
 alias: rag-v1                         # the version the product calls
 latency: interactive                  # real-time (first token within 300 ms) | interactive (1.5 s) | batch
 lengths: { input_p95: 9000, output_p95: 600 }             # tokens
 volume: { requests_per_day: 5000, peak_per_minute: 40 }
 languages: [en]
-untrusted_content: yes                # adds injection samples to the acceptance set
-acceptance: { metric: answer_correctness, floor: 0.85, max_critical_errors: 0.03 }
-samples: <at least 100 labeled samples, kept by the product>
 cost_target_per_1k: <amount, if known>
 accepted: <Business Owner, date>      # the archetype's conditions and residual risk; renewed yearly
 ```
