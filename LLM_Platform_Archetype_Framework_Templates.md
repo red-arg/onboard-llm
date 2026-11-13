@@ -1,6 +1,6 @@
 # LLM Platform: Archetype Framework Templates
 
-Version 0.16 · Nov 13, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
+Version 0.17 · Nov 13, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
 The templates for the records the [archetype framework](LLM_Platform_Archetype_Framework.md) asks for: the profile (started at Step 1, completed at joining), the definition (Step 4), the step record, the acceptance record and the release notice. They are versioned with the framework.
 
@@ -14,17 +14,16 @@ use_case: <what the product asks the model to do, in one line>
 status: live                          # live | planned, with the quarter
 task: answer
 output: prose
+latency: interactive                  # real-time (first token within 300 ms) | interactive (1.5 s) | batch
+lengths: { input_p95: 9000, output_p95: 600 }             # tokens
 untrusted_content: yes                # adds injection samples to the acceptance set
 acceptance: { metric: answer_correctness, floor: 0.85, max_critical_errors: 0.03 }
 samples: <at least 100 labeled samples, kept by the product>
-approved: <Business Owner, date>      # the use case, acceptance set and floor
+approved: <Business Owner, date>      # the use case, needs, acceptance set and floor
 
 # At joining (Stage 10)
 alias: rag-v1                         # the version the product calls
-latency: interactive                  # real-time (first token within 300 ms) | interactive (1.5 s) | batch
-lengths: { input_p95: 9000, output_p95: 600 }             # tokens
 volume: { requests_per_day: 5000, peak_per_minute: 40 }
-languages: [en]
 cost_target_per_1k: <amount, if known>
 accepted: <Business Owner, date>      # the archetype's conditions and residual risk; renewed yearly
 ```
@@ -42,13 +41,11 @@ out_of_scope: [running the query, general code (code), answers from documents (r
 offer:
   latency: interactive
   context_length: 32k
-  languages: [en, de]
   cost_target_per_1k: 20
 reference:
   suite: text-to-sql/v1
   datasets:                           # public, used as published; one score over all of them
-    - { dataset: <public dataset, en>, revision: <revision> }
-    - { dataset: <public dataset, de>, revision: <revision> }
+    - { dataset: <public dataset>, revision: <revision> }
   other_parts: [regression slice, held-out injection set]
   metric: execution_accuracy
   safety_additions: [destructive statements, injections in column comments and row values]
@@ -81,6 +78,7 @@ decided_by: <user>                    # not the proposer
 decided_at: 2026-11-20
 inputs: [<profiles@commit>, <suite version>, <every run, failed runs included>]
 outcome: create an archetype
+scope: none                           # recorded at step 2: this archetype | another archetype | none
 suitability: { likelihood: medium, decision: proceed, business_owners_told: yes }
 conditions: []
 reason: <a few sentences>
