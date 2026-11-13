@@ -45,7 +45,7 @@ reference:
   datasets:                           # public, used as published; one score over all of them
     - { dataset: <public dataset, en>, revision: <revision> }
     - { dataset: <public dataset, de>, revision: <revision> }
-  other_slices: [regression, injection (held out)]
+  other_parts: [regression slice, held-out injection set]
   metric: execution_accuracy
   safety_additions: [destructive statements, injections in column comments and row values]
 versions:
@@ -102,7 +102,7 @@ signed_by: <Business Owner, date>
 archetype: text-to-sql
 new: text-to-sql-v2
 replaces: text-to-sql-v1
-reason: better on the reference eval  # better | ties at lower cost or latency | forced replacement
+reason: better on the reference set   # better | ties at lower cost or latency | forced replacement
 reference_scores:                     # same suite version for both
   text-to-sql-v1: { reference_set: 0.87, critical_errors: 0.02 }
   text-to-sql-v2: { reference_set: 0.93, critical_errors: 0.01 }
