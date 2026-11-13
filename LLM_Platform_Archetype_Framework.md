@@ -1,6 +1,6 @@
 # LLM Platform: Archetype Framework
 
-Version 0.16 · Nov 13, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
+Version 0.17 · Nov 13, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
 ## Purpose
 
@@ -67,7 +67,7 @@ Create a new archetype only when all of these hold:
 4. A candidate model meets the safety bar and beats the best hosted model on the reference set by more than a tie, with a critical-error rate no higher (Step 3).
 5. Suitability allows it (Step 3).
 
-Otherwise, in this order: join an existing archetype, extend it, or release a stronger model as its next version. Where no current version can produce the output, as before the platform's first release, conditions 3 and 4 cannot be tested, and the archetype proceeds without them.
+Otherwise, in this order: join an existing archetype, extend it, or release a stronger model as its next version. Where no current version can produce the output, as before the platform's first release, condition 3 and the comparison in condition 4 cannot be tested, and the archetype proceeds without them. The safety bar still applies.
 
 ### Steps
 
@@ -79,7 +79,7 @@ Otherwise, in this order: join an existing archetype, extend it, or release a st
 | 4. Define and approve | Archetype owner; Platform Owner approves | Definition approved |
 | 5. Pilot and release version 1 | Archetype owner | Go-active criteria met |
 
-The archetype's status is `proposed` once Step 3 decides to create it, `pilot` once Step 4 approves it and `active` after Step 5. Each step's decision is kept in a step record (Templates).
+The archetype's status is `proposed` once Step 3 decides to create it, `pilot` once Step 4 approves it and `active` after Step 5. Step 1's approval is kept in the profile, and the decisions of Steps 2 to 5 in step records (Templates).
 
 ### Step 1. Use case and acceptance set
 
@@ -89,14 +89,14 @@ They then start the profile (Templates), writing down only what the test needs:
 
 - **Use case, task and output.** One task per profile: a use case with two tasks is two profiles and calls two aliases.
 - **Acceptance set:** labeled samples from its real or planned work, each with an expected output. It stays with the product. The platform holds only the cases a Business Owner donates to a regression slice.
-- **Floor and critical-error maximum,** set before the test runs.
+- **Metric, floor and critical-error maximum,** set before the test runs.
 - **Untrusted content** (customer messages, emails, uploads, outside documents): the acceptance set adds a set of injection samples, vetted by the data science team, on which following an injected instruction is a critical error.
 
-The Business Owner approves the profile so far. The rest of it is completed when the product joins (Step 2). Where the use case leads to a new archetype, it is completed before Step 4, which writes the offer from it.
+The Business Owner approves the profile so far. The rest of it is completed when the product joins (Step 2). Where the use case goes to Step 3, its needs (latency, lengths, languages and cost target) are added first, because the reference eval and the offer are built from them.
 
 ### Step 2. Choose an archetype and test
 
-The Developers choose the archetype that fits the use case best, from the routing guide entries: scope, out of scope, offer, conditions and known weaknesses. The archetype's owner advises if asked, and records in the step record whether the use case is in that archetype's scope, in another built archetype's scope or in none. A use case in another archetype's scope moves to that archetype.
+The Developers choose the archetype that fits the use case best, from the routing guide entries: scope, out of scope, offer, conditions and known weaknesses. The archetype's owner advises if asked, and records in the step record whether the use case is in that archetype's scope, in another built archetype's scope or in none. A use case in another archetype's scope is tested on that archetype first.
 
 A use case in scope that needs another language, a longer context or a stricter latency class first has the archetype extended (Changes), or a variant added (Step 4).
 
@@ -112,16 +112,16 @@ Where no current version can produce the output, there is nothing to choose or t
 
 **The acceptance test.** The Developers run it themselves, in dev, on their own acceptance set. In scope, they use the platform's acceptance harness: the scorers, pinned judge and reference prompt of the archetype's reference eval. Outside the scope, they score with their own method, and the acceptance record says so. The test passes when the score meets the product's floor and the critical-error rate is within its maximum. The Business Owner signs the acceptance record (Templates). The platform records it at Stage 10 and does not re-run it.
 
-**Joining.** At Stage 10 the Developers complete the profile with the alias, latency, lengths, volume, languages and cost target. The Business Owner attests to the archetype's conditions and accepts its residual risk.
+**Joining.** The acceptance test is the first part of Stage 10. After a pass, the Developers complete the profile with the alias, latency, lengths, volume, languages and cost target. The archetype's owner checks it against the offer, and a need the offer does not cover is handled by an extension or a variant before the product goes live. The Business Owner attests to the archetype's conditions and accepts its residual risk.
 
-**Gap diagnosis** is the platform's check on a fail. The data science team scores the product's samples, with its Developers, on the hosted models before anything is built. If another archetype's model passes, the product joins that archetype instead.
+**Gap diagnosis** is the platform's check on a fail. The data science team scores the product's samples, with its Developers, on the hosted models before anything is built. If another archetype's model passes, the product may join that archetype instead, from outside its scope.
 
 ### Step 3. Capability test and reference eval
 
 The platform data science team builds a **reference eval**, the suite, once, for the capability and not for the product. The suite decides this step. If the step creates an archetype, it becomes that archetype's reference eval and selects every later version (G5 policy, under Releasing a new version).
 
 - **Reference set:** one or more public datasets for the task and output, each pinned at a revision and used as published. It gives one reference-set score, over all its samples. The set is iterated over time: when products fail on cases it does not cover, the team adds or replaces datasets until it does (Changes).
-- **Regression slice:** cases that Business Owners donate from incidents and gap diagnoses, added as they occur. The team re-labels them, after which they are the platform's. Its score goes to review at G5 and is not a hard criterion.
+- **Regression slice:** cases that Business Owners donate from incidents and gap diagnoses, added as they occur. The team re-labels them, after which they are the platform's. The slice's score goes to review at G5 and is not a hard criterion.
 - **Reference prompt:** one, used for every model.
 - **Safety:** the standard safety battery, plus injection tests through every kind of content the capability takes, and tests for the archetype's critical errors. A held-out injection set is kept away from Developers, and a red-team round runs each year. Embedding and ranking archetypes have no injection tests.
 - **Judge:** pinned, internally hosted and never the candidate. It agrees with human labels on at least 85% of 50 calibration samples per dataset. Judge metrics are the mean of three passes.
@@ -136,7 +136,7 @@ The result decides:
 | Result | Decision |
 | --- | --- |
 | No candidate meets the safety bar and beats the best hosted model by more than a tie, with a critical-error rate no higher | Not now. Redesign the workflow (gap diagnosis Step 5), and re-test at the next quarterly re-evaluation |
-| Otherwise | Create an archetype. A capability that matches an unbuilt starting archetype builds that one |
+| Otherwise | Create an archetype, if suitability allows. A capability that matches an unbuilt starting archetype builds that one |
 
 **Suitability.** Before creating an archetype, the archetype owner rates the likelihood that the best candidate fails the products. The best candidate is the highest-scoring one that meets the safety bar and beats the best hosted model by more than a tie, with a critical-error rate no higher. The rating rests on two numbers:
 
@@ -149,7 +149,7 @@ The result decides:
 | Medium | Anything else | Proceed. Tell each Business Owner the lead and the shortfall, and record them as a known weakness in the routing guide |
 | High | The lead is more than a tie below the shortfall | Not now |
 
-Where no hosted model can produce the output, there is nothing to compare a candidate with. The team still builds the suite and runs the candidates, and the best candidate is the highest-scoring one that meets the safety bar. Record the decision to create the archetype in the step record, treat the likelihood as medium and tell each Business Owner that nothing was compared.
+Where no hosted model can produce the output, there is nothing to compare a candidate with. The team still builds the suite and runs the candidates, and the best candidate is the highest-scoring one that meets the safety bar. If none meets it, the decision is not now. Otherwise record the decision to create the archetype in the step record, treat the likelihood as medium and tell each Business Owner that nothing was compared.
 
 ### Step 4. Define and approve
 
@@ -264,7 +264,7 @@ Severity 1: act the same day. Severity 2: within two weeks. Severity 3: at the n
 
 | Change | Such as | Approved by | Re-test |
 | --- | --- | --- | --- |
-| Minor | A new revision of a reference dataset; new regression cases; a product joining or leaving; a profile change within the offer | Archetype owner | The changed part of the suite, on every serving version |
+| Minor | A new revision of a reference dataset; new regression cases; a profile change within the offer | Archetype owner | The changed part of the suite, on every serving version |
 | Moderate | A new language, longer context or stricter latency; a widened scope; an added or replaced reference dataset | Archetype owner and a second data science team member | Every serving version |
 | New version | A new model, hash or quantization | As Releasing a new version | The full reference eval, then each product's acceptance test |
 | Major | A merge, split or retirement; a narrowed scope or a dropped output, which is a new archetype and never a change in place | Platform Owner | As for a new archetype |
@@ -304,7 +304,7 @@ Gap diagnosis scores both acceptance sets on every hosted model that can write a
 | `rag-large-v1` | 0.71 | 0.66 |
 | `agents-v1` | 0.69 | 0.67 |
 
-An optimized prompt lifts the best hosted score to 0.74 on the analytics set and 0.70 on the finance set, and only the reference model passes: a catalog gap. The use case goes to Step 3.
+An optimized prompt lifts the best hosted score to 0.74 on the analytics set and 0.70 on the finance set, and only the reference model passes: a catalog gap. The use case goes to Step 3, so both products add their needs to their profiles.
 
 **Step 3.** The reference set is two public text-to-SQL datasets, one English and one German, each pinned at a revision, with one score over both. The team adds injection tests through column comments and row values, and tests for destructive statements. One open-weight candidate passes the legal and security reviews and is run with the hosted models. A small internal model scores 0.31, more than a tie below every other model.
 
@@ -317,7 +317,7 @@ An optimized prompt lifts the best hosted score to 0.74 on the analytics set and
 
 The candidate meets the safety bar and beats the best hosted model, M2, by 15 points, more than a tie, and its 2% critical-error rate is no higher than M2's: create an archetype. Likelihood is medium, because the 15-point lead is within a tie of the largest shortfall, the finance tool's 15 points (0.85 against 0.70), so both Business Owners are told the lead and the shortfall.
 
-**Step 4.** The definition is the one filled in under [Templates](LLM_Platform_Archetype_Framework_Templates.md). Context length is 1.2 × (18,000 + 400) = 22,080 tokens, rounded up to 32k.
+**Step 4.** The definition is the one filled in under [Templates](LLM_Platform_Archetype_Framework_Templates.md), shown there as it stands once the archetype is active. Context length is 1.2 × (18,000 + 400) = 22,080 tokens, rounded up to 32k.
 
 **Step 5.** The candidate goes GA as `text-to-sql-v1`, with the analytics assistant as pilot. Its acceptance score is 0.86, a pass within a tie. Of 50 labeled live outputs, 44 are correct: the 95% Wilson interval is 0.76 to 0.94, and 0.86 is inside it. The archetype goes active.
 
@@ -381,3 +381,4 @@ Send feedback as an issue or pull request in `red-arg/onboard-llm`. The Platform
 | 0.14 | Nov 12, 2026 | Simplification |
 | 0.15 | Nov 13, 2026 | Reference evals built once from public datasets and iterated over time: the capability test and the reference eval are one step, and the steps go from six to five. One reference-set score and a relative G5 policy, with the safety bar required, replace the reference floor and critical-error maximum, so a product's own bar is checked only by its acceptance test. A new archetype is only for a use case in no built archetype's scope; a catalog gap inside a scope is closed by the next version. Products choose their archetype and run their own acceptance test. Candidates pass the legal and security reviews before they are run. The caps on public benchmarks and on serving versions are removed |
 | 0.16 | Nov 13, 2026 | Step 1 reduced to a conversation with the data science team and the acceptance set with its floor. The rest of the profile is completed when the product joins |
+| 0.17 | Nov 13, 2026 | Coherence fixes: the completed profile is checked against the offer at joining; a use case that goes to Step 3 adds its needs first; the safety bar applies to the first archetype; joining is no longer listed as a change the archetype owner approves |

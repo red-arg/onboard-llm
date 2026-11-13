@@ -1,6 +1,6 @@
 # LLM Platform: Archetype Framework Templates
 
-Version 0.16 · Nov 13, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
+Version 0.17 · Nov 13, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
 The templates for the records the [archetype framework](LLM_Platform_Archetype_Framework.md) asks for: the profile (started at Step 1, completed at joining), the definition (Step 4), the step record, the acceptance record and the release notice. They are versioned with the framework.
 
@@ -81,6 +81,7 @@ decided_by: <user>                    # not the proposer
 decided_at: 2026-11-20
 inputs: [<profiles@commit>, <suite version>, <every run, failed runs included>]
 outcome: create an archetype
+scope: none                           # recorded at step 2: this archetype | another archetype | none
 suitability: { likelihood: medium, decision: proceed, business_owners_told: yes }
 conditions: []
 reason: <a few sentences>
