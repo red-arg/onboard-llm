@@ -24,7 +24,6 @@ approved: <Business Owner, date>      # the use case, needs, acceptance set and 
 # At joining (Stage 10)
 alias: rag-v1                         # the version the product calls
 volume: { requests_per_day: 5000, peak_per_minute: 40 }
-languages: [en]
 cost_target_per_1k: <amount, if known>
 accepted: <Business Owner, date>      # the archetype's conditions and residual risk; renewed yearly
 ```
@@ -42,13 +41,11 @@ out_of_scope: [running the query, general code (code), answers from documents (r
 offer:
   latency: interactive
   context_length: 32k
-  languages: [en, de]
   cost_target_per_1k: 20
 reference:
   suite: text-to-sql/v1
   datasets:                           # public, used as published; one score over all of them
-    - { dataset: <public dataset, en>, revision: <revision> }
-    - { dataset: <public dataset, de>, revision: <revision> }
+    - { dataset: <public dataset>, revision: <revision> }
   other_parts: [regression slice, held-out injection set]
   metric: execution_accuracy
   safety_additions: [destructive statements, injections in column comments and row values]
