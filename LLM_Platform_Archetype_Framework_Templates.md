@@ -1,6 +1,6 @@
 # LLM Platform: Archetype Framework Templates
 
-Version 0.15 · Nov 12, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
+Version 0.15 · Nov 13, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
 The templates for the records the [archetype framework](LLM_Platform_Archetype_Framework.md) asks for: the profile (Step 1), the definition (Step 4), the step record, the acceptance record and the release notice. They are versioned with the framework.
 
@@ -42,9 +42,9 @@ offer:
   cost_target_per_1k: 20
 reference:
   suite: text-to-sql/v1
-  datasets:                           # public, used as published
-    - { slice: reference, dataset: <public dataset>, revision: <revision> }
-    - { slice: reference-de, dataset: <public dataset>, revision: <revision> }
+  datasets:                           # public, used as published; one score over all of them
+    - { dataset: <public dataset, en>, revision: <revision> }
+    - { dataset: <public dataset, de>, revision: <revision> }
   other_slices: [regression, injection (held out)]
   metric: execution_accuracy
   safety_additions: [destructive statements, injections in column comments and row values]
@@ -104,8 +104,8 @@ new: text-to-sql-v2
 replaces: text-to-sql-v1
 reason: better on the reference eval  # better | ties at lower cost or latency | forced replacement
 reference_scores:                     # same suite version for both
-  text-to-sql-v1: { reference: 0.87, reference-de: 0.86, critical_errors: 0.02 }
-  text-to-sql-v2: { reference: 0.93, reference-de: 0.91, critical_errors: 0.01 }
+  text-to-sql-v1: { reference_set: 0.87, critical_errors: 0.02 }
+  text-to-sql-v2: { reference_set: 0.93, critical_errors: 0.01 }
 known_differences:                    # prompt format, output format, refusals
   - v2 wraps the query in a code fence unless the prompt forbids it
 reference_prompt: <path@commit>
