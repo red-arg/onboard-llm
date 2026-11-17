@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 944 946" width="944" height="946" role="img" aria-label="Flow of releasing a new version. A qualifying candidate is selected, piloted by one product and approved by the Platform Owner, then released: the new version becomes current and the old one deprecated with an end date 90 days ahead. Each product re-runs its acceptance test and moves. A product that cannot move gets a gap diagnosis, which ends in an optimized prompt, a one-time end-date extension, or a workflow redesign. The old version then retires.">
+  <title>Version release flow</title>
+  <style>
+    svg { --bg:#f4f6f9; --surface:#ffffff; --ink:#17212c; --muted:#566474; --line:#7f8c9b; --accent:#2c4bb0; --accent-bg:#e9eefb; --good:#1c7350; --good-bg:#e3f3ec; --hold:#9a5410; --hold-bg:#fbefdf;
+      --display:"Space Grotesk","Segoe UI",system-ui,-apple-system,sans-serif; --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
+    @media (prefers-color-scheme: dark) { svg { --bg:#11161c; --surface:#1a212a; --ink:#e5eaf0; --muted:#9ba8b6; --line:#6b7785; --accent:#93a9ff; --accent-bg:#1f2944; --good:#62c89c; --good-bg:#16302a; --hold:#e2a55f; --hold-bg:#33261a; } }
+    .ground { fill: var(--surface); }
+    .step { fill: var(--surface); stroke: var(--accent); stroke-width: 1.5; }
+    .diag { fill: var(--bg); stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .good { fill: var(--good-bg); stroke: var(--good); stroke-width: 1.5; }
+    .hold { fill: var(--hold-bg); stroke: var(--hold); stroke-width: 1.5; }
+    .next { fill: var(--accent-bg); stroke: var(--accent); stroke-width: 1.5; }
+    .flow { fill: none; stroke: var(--line); stroke-width: 1.5; }
+    .skip { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .head { fill: var(--line); }
+    .n { font-family: var(--display); font-weight: 600; font-size: 22px; fill: var(--accent); }
+    .t { font-family: var(--display); font-weight: 600; font-size: 13.5px; fill: var(--ink); }
+    .s { font-family: var(--body); font-size: 11px; fill: var(--muted); }
+    .l { font-family: var(--body); font-size: 11px; font-weight: 500; fill: var(--ink); }
+    .m { font-family: var(--mono); font-weight: 500; font-size: 10.5px; fill: var(--ink); }
+    .st { font-family: var(--mono); font-weight: 500; fill: var(--accent); }
+  </style>
+  <rect class="ground" x="0" y="0" width="944" height="946" rx="10"/>
+
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" class="head"/>
+    </marker>
+  </defs>
+
+  <!-- status lanes -->
+  <text class="s" x="60" y="136" text-anchor="middle">old version</text>
+  <text class="m" x="60" y="152" text-anchor="middle">&lt;id&gt;-v&lt;n&gt;</text>
+  <text class="s" x="148" y="136" text-anchor="middle">new version</text>
+  <text class="m" x="148" y="152" text-anchor="middle">&lt;id&gt;-v&lt;n+1&gt;</text>
+
+  <rect class="good" x="20" y="172" width="80" height="308" rx="6"/>
+  <text class="m" x="60" y="196" text-anchor="middle">current</text>
+  <rect class="hold" x="20" y="488" width="80" height="268" rx="6"/>
+  <text class="m" x="60" y="512" text-anchor="middle">deprecated</text>
+  <text class="s" x="60" y="528" text-anchor="middle">90 days to</text>
+  <text class="s" x="60" y="542" text-anchor="middle">the end date</text>
+  <rect class="diag" x="20" y="764" width="80" height="158" rx="6"/>
+  <text class="m" x="60" y="788" text-anchor="middle">retired</text>
+
+  <rect class="next" x="108" y="310" width="80" height="170" rx="6"/>
+  <text class="m" x="148" y="334" text-anchor="middle">dev</text>
+  <rect class="good" x="108" y="488" width="80" height="434" rx="6"/>
+  <text class="m" x="148" y="512" text-anchor="middle">current</text>
+
+  <!-- Trigger -->
+  <rect class="diag" x="220" y="24" width="320" height="96" rx="8"/>
+  <text class="t" x="380" y="50" text-anchor="middle">A candidate model qualifies</text>
+  <text class="s" x="380" y="70" text-anchor="middle">It beats the current version by more than a tie,</text>
+  <text class="s" x="380" y="85" text-anchor="middle">ties at a clearly lower cost or latency,</text>
+  <text class="s" x="380" y="100" text-anchor="middle">or replaces a model that must go</text>
+
+  <path class="flow" d="M380 120 V172" marker-end="url(#arr)"/>
+
+  <!-- Step 1 -->
+  <rect class="step" x="220" y="172" width="320" height="72" rx="8"/>
+  <text class="n" x="240" y="216">1</text>
+  <text class="t" x="272" y="204">Select</text>
+  <text class="s" x="272" y="223">Platform data science team</text>
+
+  <path class="flow" d="M540 208 H680" marker-end="url(#arr)"/>
+  <text class="l" x="610" y="201" text-anchor="middle">fails the reviews</text>
+  <text class="l" x="610" y="223" text-anchor="middle">or selection policy</text>
+
+  <rect class="hold" x="680" y="172" width="240" height="72" rx="8"/>
+  <text class="t" x="800" y="204" text-anchor="middle">No release</text>
+  <text class="s" x="800" y="223" text-anchor="middle">The current version keeps serving</text>
+
+  <path class="flow" d="M380 244 V310" marker-end="url(#arr)"/>
+  <text class="l" x="392" y="270">passes the onboarding reviews</text>
+  <text class="l" x="392" y="286">and the selection policy</text>
+
+  <!-- Step 2 -->
+  <rect class="step" x="220" y="310" width="320" height="72" rx="8"/>
+  <text class="n" x="240" y="354">2</text>
+  <text class="t" x="272" y="342">Pilot</text>
+  <text class="s" x="272" y="361">Archetype owner · one pilot product</text>
+
+  <path class="flow" d="M380 382 V448" marker-end="url(#arr)"/>
+  <text class="l" x="392" y="408">pilot runs its acceptance test,</text>
+  <text class="l" x="392" y="424">Platform Owner approves the model</text>
+
+  <!-- Step 3 -->
+  <rect class="step" x="220" y="448" width="320" height="72" rx="8"/>
+  <text class="n" x="240" y="492">3</text>
+  <text class="t" x="272" y="480">Release</text>
+  <text class="s" x="272" y="499">Production Engineers · archetype owner</text>
+
+  <path class="flow" d="M380 520 V586" marker-end="url(#arr)"/>
+  <text class="l" x="392" y="546">capacity confirmed,</text>
+  <text class="l" x="392" y="562">release notice sent</text>
+
+  <!-- Step 4 -->
+  <rect class="step" x="220" y="586" width="320" height="72" rx="8"/>
+  <text class="n" x="240" y="630">4</text>
+  <text class="t" x="272" y="618">Move</text>
+  <text class="s" x="272" y="637">Developers · Business Owner signs</text>
+
+  <path class="flow" d="M540 610 H680" marker-end="url(#arr)"/>
+  <text class="l" x="610" y="603" text-anchor="middle">a product cannot move</text>
+  <path class="flow" d="M680 640 H540" marker-end="url(#arr)"/>
+  <text class="l" x="610" y="655" text-anchor="middle">prompt problem</text>
+
+  <!-- Gap diagnosis and its outcomes -->
+  <rect class="diag" x="680" y="586" width="240" height="72" rx="8"/>
+  <text class="t" x="800" y="618" text-anchor="middle">Gap diagnosis</text>
+  <text class="s" x="800" y="637" text-anchor="middle">Inside the notice period</text>
+
+  <path class="flow" d="M800 586 V550" marker-end="url(#arr)"/>
+  <text class="l" x="812" y="572">catalog gap</text>
+
+  <rect class="next" x="680" y="462" width="240" height="88" rx="8"/>
+  <text class="t" x="800" y="492" text-anchor="middle">End date extended once</text>
+  <text class="s" x="800" y="512" text-anchor="middle">by one notice period; the gap goes</text>
+  <text class="s" x="800" y="527" text-anchor="middle">to a further version, or to Step 3</text>
+
+  <path class="flow" d="M800 658 V702" marker-end="url(#arr)"/>
+  <text class="l" x="812" y="684">beyond current models</text>
+
+  <rect class="hold" x="680" y="702" width="240" height="88" rx="8"/>
+  <text class="t" x="800" y="732" text-anchor="middle">Redesign the workflow</text>
+  <text class="s" x="800" y="752" text-anchor="middle">or the product leaves at the</text>
+  <text class="s" x="800" y="767" text-anchor="middle">old version's end date</text>
+
+  <path class="flow" d="M380 658 V724" marker-end="url(#arr)"/>
+  <text class="l" x="392" y="684">every product has moved,</text>
+  <text class="l" x="392" y="700">or the end date arrives</text>
+
+  <!-- Step 5 -->
+  <rect class="step" x="220" y="724" width="320" height="72" rx="8"/>
+  <text class="n" x="240" y="768">5</text>
+  <text class="t" x="272" y="756">Retire</text>
+  <text class="s" x="272" y="775">Production Engineers</text>
+
+  <path class="flow" d="M380 796 V862" marker-end="url(#arr)"/>
+  <text class="l" x="392" y="822">old version removed from serving</text>
+
+  <!-- End -->
+  <rect class="good" x="220" y="862" width="320" height="60" rx="8"/>
+  <text class="t" x="380" y="888" text-anchor="middle">Release complete</text>
+  <text class="s" x="380" y="906" text-anchor="middle">Products that have not moved are no longer served</text>
+</svg>

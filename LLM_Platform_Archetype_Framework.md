@@ -1,6 +1,6 @@
 # LLM Platform: Archetype Framework
 
-Version 0.25 · Nov 17, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
+Version 0.26 · Nov 17, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
 ## Purpose
 
@@ -81,7 +81,9 @@ Otherwise, in this order: join an existing archetype, extend it, or release a st
 
 The archetype's status is `proposed` once Step 3 decides to create it, `pilot` once Step 4 approves it and `active` after Step 5. Step 1's approval is kept in the profile, and the decisions of Steps 2 to 5 in step records (Templates).
 
-The flow of the steps, with every way out of them, is drawn in the [archetype creation flow](LLM_Platform_Archetype_Creation_Flow.html).
+The flow of the steps, with every way out of them, is also available as a page, the [archetype creation flow](LLM_Platform_Archetype_Creation_Flow.html):
+
+![Archetype creation flow: Steps 1 to 5 and every way out of them](LLM_Platform_Archetype_Creation_Flow.svg)
 
 ### Step 1. Use case and acceptance set
 
@@ -214,7 +216,9 @@ The policy sets no absolute floor. Whether a version is good enough for a produc
 | 4. Move | Developers; Business Owner signs | Each product re-runs its acceptance test on the new version in dev, adjusts its prompts, and switches to it in production |
 | 5. Retire | Production Engineers | The old version retires on its end date, or earlier once no product calls it. Products that have not moved are no longer served |
 
-The flow of these steps, with each version's status beside them, is drawn in the [version release flow](LLM_Platform_Archetype_Version_Release_Flow.html).
+The flow of these steps, with each version's status beside them, is also available as a page, the [version release flow](LLM_Platform_Archetype_Version_Release_Flow.html):
+
+![Version release flow: the five release steps, with each version's status beside them](LLM_Platform_Archetype_Version_Release_Flow.svg)
 
 **Closing a catalog gap.** Where gap diagnosis finds a catalog gap for a use case in the archetype's scope, the failing cases the Business Owner donates join the regression slice, the team iterates the reference set until it shows the gap (Changes), and a promising candidate enters the onboarding process, which must then beat the current version on it. If none does, the product redesigns its workflow (gap diagnosis Step 5).
 
@@ -333,3 +337,4 @@ Send feedback as an issue or pull request in `red-arg/onboard-llm`. The Platform
 | 0.23 | Nov 17, 2026 | Known gaps section removed: interim practices, differences from the companion documents, planned work and open questions |
 | 0.24 | Nov 17, 2026 | Quarterly review reduced to three tasks for the archetype owner: review the re-evaluation, update the archetype's model, and propose retiring or merging archetypes. The Platform Owner's review and the yearly profile reconfirmation are removed |
 | 0.25 | Nov 17, 2026 | Flow diagrams added as linked pages: the archetype creation flow for Steps 1 to 5, and the version release flow for releasing a new version |
+| 0.26 | Nov 17, 2026 | Both flow diagrams shown inline as images, beside the links to their pages |
