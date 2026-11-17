@@ -1,6 +1,6 @@
 # LLM Platform: Archetype Framework Templates
 
-Version 0.17 · Nov 13, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
+Version 0.24 · Nov 17, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
 The templates for the records the [archetype framework](LLM_Platform_Archetype_Framework.md) asks for: the profile (started at Step 1, completed at joining), the definition (Step 4), the step record, the acceptance record and the release notice. They are versioned with the framework.
 
@@ -16,16 +16,19 @@ task: answer
 output: prose
 latency: interactive                  # real-time (first token within 300 ms) | interactive (1.5 s) | batch
 lengths: { input_p95: 9000, output_p95: 600 }             # tokens
+data:                                 # identified and classified by the Business Owner
+  description: <the data the product sends to the model, acceptance samples included>
+  classification: <its level in the organization's scheme, within the platform's ceiling>
 untrusted_content: yes                # adds injection samples to the acceptance set
 acceptance: { metric: answer_correctness, floor: 0.85, max_critical_errors: 0.03 }
 samples: <at least 100 labeled samples, kept by the product>
-approved: <Business Owner, date>      # the use case, needs, acceptance set and floor
+approved: <Business Owner, date>      # the use case, needs, data classification, acceptance set and floor
 
-# At joining (Stage 10)
+# At joining
 alias: rag-v1                         # the version the product calls
 volume: { requests_per_day: 5000, peak_per_minute: 40 }
 cost_target_per_1k: <amount, if known>
-accepted: <Business Owner, date>      # the archetype's conditions and residual risk; renewed yearly
+accepted: <Business Owner, date>      # the archetype's conditions and residual risk
 ```
 
 **Definition** (filled in for the [text-to-SQL example](LLM_Platform_Archetype_Framework.md#example-text-to-sql))
@@ -50,7 +53,7 @@ reference:
   metric: execution_accuracy
   safety_additions: [destructive statements, injections in column comments and row values]
 versions:
-  - { alias: text-to-sql-v1, model: <registry id>@<hash>, status: current, ga: 2027-01-18, end_date: null }
+  - { alias: text-to-sql-v1, model: <registry id>@<hash>, status: current, release_date: 2027-01-18, end_date: null }
 products: [analytics-assistant, finance-reporting]
 conditions:
   - Queries run with the end user's own database permissions, read-only
@@ -61,7 +64,7 @@ risks:
     test: Red-team success no higher than in the last round
     owner: Platform data science team
   - risk: A query returns the expected shape but wrong values
-    control: The G5 policy's critical-error criterion; each product's own maximum
+    control: The selection policy's critical-error criterion; each product's own maximum
     test: Critical-error rate on the reference set and in each acceptance record
     owner: Archetype owner
 residual_risk:
@@ -89,7 +92,6 @@ reason: <a few sentences>
 ```yaml
 profile: <profile@commit>
 alias: text-to-sql-v2
-harness: text-to-sql/v1               # the suite version; "own method" outside the scope
 samples: { count: 100, injection: 20, commit: <commit> }
 prompt: <product prompt@commit>
 result: { execution_accuracy: 0.90, critical_errors: 0.01 }
@@ -111,7 +113,7 @@ reference_scores:                     # same suite version for both
 known_differences:                    # prompt format, output format, refusals
   - v2 wraps the query in a code fence unless the prompt forbids it
 reference_prompt: <path@commit>
-ga: 2027-08-03
-end_date: 2027-11-01                  # 90 days after GA
+release_date: 2027-08-03
+end_date: 2027-11-01                  # 90 days after the release date
 sent_to: [<every Business Owner on the archetype>]
 ```
