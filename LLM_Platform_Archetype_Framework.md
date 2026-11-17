@@ -1,6 +1,6 @@
 # LLM Platform: Archetype Framework
 
-Version 0.23 · Nov 17, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
+Version 0.24 · Nov 17, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
 ## Purpose
 
@@ -20,7 +20,7 @@ Every archetype gets the same checks and every version the same release, whateve
 | --- | --- |
 | Business Owner (owns the product) | Identifies and classifies the product's data; approves the product's profiles; signs each acceptance result; donates cases to regression slices; attests to the archetype's conditions and accepts its residual risk |
 | Developers (build the product) | Write profiles and label the acceptance set; choose the archetype; run the acceptance test on joining and on each new version; move the product within the notice period; report incidents |
-| Platform Owner | Approves new archetypes, variants, major changes, retirements and end-date extensions; names archetype owners; audits the catalog and its records each quarter; keeps this document current |
+| Platform Owner | Approves new archetypes, variants, major changes, retirements and end-date extensions; names archetype owners; keeps this document current |
 | Platform data science team | Owns the reference evals; runs gap diagnoses, capability tests, re-evaluations, label audits and red-team rounds |
 | Production Engineers (platform engineers) | Run the gateway and the versioned aliases: credentials, metering, alerts, and capacity for every serving version through each notice period |
 
@@ -229,20 +229,10 @@ The policy sets no absolute floor. Whether a version is good enough for a produc
 The archetype owner:
 
 1. Reviews the re-evaluation of every serving version on the reference eval, with incident and gap diagnosis cases added to the regression slice.
-2. Checks each product's usage against its profile and the offer. Business Owners reconfirm profiles older than 12 months and renew their residual-risk acceptance. Credentials for unconfirmed profiles lapse after notice.
-3. Compares reference scores with the products' acceptance results. Where the reference set does not show a failure that a product in scope reports, asks for donated cases and iterates the reference set (Changes).
-4. Lists the products that call a version outside its scope, and proposes a widened scope or a new archetype when a second product has the same need.
-5. Proposes retiring an archetype that has had no products for two quarters, or merging two archetypes when one model ranks first, or ties for first, on both reference evals.
-6. Updates the blast radius and the routing guide entry.
-7. Reviews decisions that were reversed or that overrode a rule.
+2. Updates the archetype's model: where a candidate model qualifies, proposes a new version (Releasing a new version).
+3. Proposes retiring an archetype that has had no products for two quarters, or merging two archetypes when one model ranks first, or ties for first, on both reference evals.
 
 The data science team re-labels a random 10% of each regression slice. Below 90% agreement, the slice is re-labeled before it is used again. Public datasets are used as published.
-
-The Platform Owner:
-
-- reviews products per archetype and versions per model;
-- checks that every pilot or active archetype has an owner and its step records, with the right approvers;
-- once a year, sends a seeded proposal, such as a definition with a wrong context length, through the steps to check that it is caught.
 
 ### Changes
 
@@ -337,3 +327,4 @@ Send feedback as an issue or pull request in `red-arg/onboard-llm`. The Platform
 | 0.21 | Nov 17, 2026 | GA replaced by release date |
 | 0.22 | Nov 17, 2026 | Signals section removed. Two of its rules are kept: a critical-error incident where the model is at fault triggers a forced replacement, and a live product below its floor triggers gap diagnosis |
 | 0.23 | Nov 17, 2026 | Known gaps section removed: interim practices, differences from the companion documents, planned work and open questions |
+| 0.24 | Nov 17, 2026 | Quarterly review reduced to three tasks for the archetype owner: review the re-evaluation, update the archetype's model, and propose retiring or merging archetypes. The Platform Owner's review and the yearly profile reconfirmation are removed |

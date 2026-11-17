@@ -1,6 +1,6 @@
 # LLM Platform: Archetype Framework Templates
 
-Version 0.23 · Nov 17, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
+Version 0.24 · Nov 17, 2026 · Owner: @Zhi Feng · Next review: Jan 31, 2027
 
 The templates for the records the [archetype framework](LLM_Platform_Archetype_Framework.md) asks for: the profile (started at Step 1, completed at joining), the definition (Step 4), the step record, the acceptance record and the release notice. They are versioned with the framework.
 
@@ -28,7 +28,7 @@ approved: <Business Owner, date>      # the use case, needs, data classification
 alias: rag-v1                         # the version the product calls
 volume: { requests_per_day: 5000, peak_per_minute: 40 }
 cost_target_per_1k: <amount, if known>
-accepted: <Business Owner, date>      # the archetype's conditions and residual risk; renewed yearly
+accepted: <Business Owner, date>      # the archetype's conditions and residual risk
 ```
 
 **Definition** (filled in for the [text-to-SQL example](LLM_Platform_Archetype_Framework.md#example-text-to-sql))
